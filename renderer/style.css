@@ -1,0 +1,142 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  user-select: none;
+}
+
+html, body {
+  background: transparent;
+  overflow: hidden;
+}
+
+#panel {
+  width: 320px;
+  height: 440px;
+  background: rgba(15, 15, 20, 0.72);
+  border: 1px solid rgba(150, 120, 60, 0.5);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  color: #e8e0cf;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+body.unlocked #panel {
+  border-color: #d4af37;
+  box-shadow: 0 0 14px rgba(212, 175, 55, 0.55);
+}
+
+#header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  -webkit-app-region: drag;
+}
+
+#title {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+#lock-indicator {
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+#list {
+  list-style: none;
+  flex: 1;
+  overflow-y: auto;
+}
+
+#list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 2px;
+  font-size: 13px;
+  border-radius: 4px;
+}
+
+body.unlocked #list li:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+#list li input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: #d4af37;
+  flex-shrink: 0;
+}
+
+#list li .item-text {
+  flex: 1;
+  outline: none;
+}
+
+#list li.done .item-text {
+  text-decoration: line-through;
+  opacity: 0.5;
+}
+
+#list li .del-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: #c96b6b;
+  font-size: 14px;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+body.unlocked #list li .del-btn {
+  display: inline-block;
+}
+
+#list li .del-btn:hover {
+  opacity: 1;
+}
+
+#add-row {
+  display: none;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+body.unlocked #add-row {
+  display: flex;
+}
+
+#new-item-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  padding: 5px 7px;
+  color: #e8e0cf;
+  font-size: 12px;
+}
+
+#add-btn {
+  background: #d4af37;
+  border: none;
+  border-radius: 4px;
+  width: 26px;
+  color: #1a1a1a;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+#hint {
+  margin-top: 8px;
+  font-size: 10px;
+  text-align: center;
+  opacity: 0.5;
+}
