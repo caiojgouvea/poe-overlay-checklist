@@ -216,7 +216,8 @@ body.edit-mode #settings-panel {
 
 #build-row,
 #theme-row,
-#add-section-row {
+#add-section-row,
+#hotkey-row {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -302,6 +303,51 @@ body.edit-mode #settings-panel {
 }
 
 #import-status.error {
+  color: var(--accent-strong);
+}
+
+#hotkey-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--field-bg);
+  border: 1px solid var(--accent-border);
+  border-radius: 4px;
+  padding: 4px 6px;
+  color: var(--text-primary);
+  font-size: 10px;
+  text-align: center;
+  -webkit-app-region: no-drag;
+}
+
+#hotkey-record-btn {
+  background: var(--btn-bg);
+  border: none;
+  border-radius: 4px;
+  padding: 0 8px;
+  color: var(--btn-fg);
+  font-weight: bold;
+  font-size: 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+  -webkit-app-region: no-drag;
+}
+
+#hotkey-record-btn:hover {
+  background: var(--btn-bg-hover);
+}
+
+#hotkey-record-btn.recording {
+  background: var(--accent);
+  color: #fff;
+}
+
+#hotkey-status {
+  font-size: 9px;
+  color: var(--text-muted);
+  min-height: 11px;
+}
+
+#hotkey-status.error {
   color: var(--accent-strong);
 }
 

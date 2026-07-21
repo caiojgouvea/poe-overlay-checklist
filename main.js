@@ -10,7 +10,8 @@ const BUILDS_FILE = path.join(app.getPath('userData'), 'builds.json')
 const WINDOW_FILE = path.join(app.getPath('userData'), 'window-state.json')
 const REGEX_WINDOW_FILE = path.join(app.getPath('userData'), 'regex-window-state.json')
 const REGEX_FILE = path.join(app.getPath('userData'), 'regex-shortcuts.json')
-const HOTKEY = 'Control+Shift+L'
+const HOTKEY_FILE = path.join(app.getPath('userData'), 'hotkey.json')
+const DEFAULT_HOTKEY = 'Control+Shift+L'
 const CLIPBOARD_POLL_MS = 500
 const GAME_WINDOW_TITLE = 'Path of Exile'
 const APP_NAME = 'PoE Progression Companion'
@@ -22,6 +23,40 @@ let toggleWindow
 let tray
 let isQuitting = false
 let lastClipboardText = ''
+let currentHotkey = DEFAULT_HOTKEY
+
+function loadHotkey() {
+  try {
+    const raw = fs.readFileSync(HOTKEY_FILE, 'utf-8')
+    const parsed = JSON.parse(raw)
+    return parsed.accelerator || DEFAULT_HOTKEY
+  } catch (e) {
+    return DEFAULT_HOTKEY
+  }
+}
+
+function saveHotkeyToDisk(accelerator) {
+  try {
+    fs.writeFileSync(HOTKEY_FILE, JSON.stringify({ accelerator }), 'utf-8')
+  } catch (e) {
+    console.error('Falha ao salvar atalho:', e)
+  }
+}
+
+// Swaps the global show/hide shortcut. Returns false (and leaves the old
+// one registered) if the new combo is invalid or already taken by
+// another app.
+function registerHotkey(accelerator) {
+  globalShortcut.unregister(currentHotkey)
+  const ok = globalShortcut.register(accelerator, toggleVisibility)
+  if (!ok) {
+    globalShortcut.register(currentHotkey, toggleVisibility)
+    return false
+  }
+  currentHotkey = accelerator
+  saveHotkeyToDisk(accelerator)
+  return true
+}
 
 function loadWindowState() {
   try {
@@ -618,7 +653,7 @@ function createTray() {
   tray.setToolTip(APP_NAME)
   tray.setContextMenu(
     Menu.buildFromTemplate([
-      { label: 'Show/Hide (Ctrl+Shift+L)', click: () => toggleVisibility() },
+      { label: 'Show/Hide', click: () => toggleVisibility() },
       { type: 'separator' },
       { label: 'Quit', click: () => app.quit() }
     ])
@@ -724,15 +759,23 @@ app.whenReady().then(() => {
     regexWindow.show()
   }
 
-  const registered = globalShortcut.register(HOTKEY, toggleVisibility)
+  currentHotkey = loadHotkey()
+  const registered = globalShortcut.register(currentHotkey, toggleVisibility)
   if (!registered) {
-    console.error('Não consegui registrar o atalho', HOTKEY, '- talvez já esteja em uso.')
+    console.error('Não consegui registrar o atalho', currentHotkey, '- talvez já esteja em uso.')
+    currentHotkey = DEFAULT_HOTKEY
+    globalShortcut.register(currentHotkey, toggleVisibility)
   }
 
   ipcMain.handle('load-items', () => loadItems())
   ipcMain.on('save-items', (_event, items) => saveItems(items))
   ipcMain.on('search-item', (_event, itemId) => searchAndCheckItem(itemId))
   ipcMain.on('hide-window', () => mainWindow && hideAllWindows())
+  ipcMain.handle('load-hotkey', () => currentHotkey)
+  ipcMain.handle('set-hotkey', (_event, accelerator) => {
+    const ok = registerHotkey(accelerator)
+    return { ok, hotkey: currentHotkey }
+  })
   ipcMain.on('toggle-regex-window', () => toggleRegexWindow())
   ipcMain.on('hide-regex-window', () => {
     if (!regexWindow) return

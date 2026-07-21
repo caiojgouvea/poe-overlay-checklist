@@ -15,6 +15,10 @@ const themeSelect = document.getElementById('theme-select')
 const importUrlInput = document.getElementById('import-url-input')
 const importBuildBtn = document.getElementById('import-build-btn')
 const importStatus = document.getElementById('import-status')
+const hotkeyInput = document.getElementById('hotkey-input')
+const hotkeyRecordBtn = document.getElementById('hotkey-record-btn')
+const hotkeyStatus = document.getElementById('hotkey-status')
+const hintEl = document.getElementById('hint')
 
 function uid() {
   return crypto.randomUUID()
@@ -462,4 +466,80 @@ themeSelect.value = savedTheme
 themeSelect.addEventListener('change', () => {
   document.body.dataset.theme = themeSelect.value
   localStorage.setItem(THEME_KEY, themeSelect.value)
+})
+
+// "Control+Shift+L" -> "Ctrl+Shift+L", just for display.
+function formatHotkeyForDisplay(accelerator) {
+  return accelerator.replace(/Control/g, 'Ctrl').replace(/Super/g, 'Win')
+}
+
+function applyHotkey(accelerator) {
+  hotkeyInput.value = formatHotkeyForDisplay(accelerator)
+  hintEl.textContent = `${formatHotkeyForDisplay(accelerator)} to show/hide`
+  closeBtn.title = `Hide (${formatHotkeyForDisplay(accelerator)})`
+}
+
+function keyEventToAccelerator(e) {
+  if (['Control', 'Alt', 'Shift', 'Meta'].includes(e.key)) return null
+
+  const parts = []
+  if (e.ctrlKey) parts.push('Control')
+  if (e.altKey) parts.push('Alt')
+  if (e.shiftKey) parts.push('Shift')
+  if (e.metaKey) parts.push('Super')
+  if (parts.length === 0) return null
+
+  const arrowKeys = { ArrowUp: 'Up', ArrowDown: 'Down', ArrowLeft: 'Left', ArrowRight: 'Right' }
+  let mainKey = null
+  if (/^[a-zA-Z0-9]$/.test(e.key)) mainKey = e.key.toUpperCase()
+  else if (/^F([1-9]|1[0-9]|2[0-4])$/.test(e.key)) mainKey = e.key
+  else if (e.key === ' ') mainKey = 'Space'
+  else if (arrowKeys[e.key]) mainKey = arrowKeys[e.key]
+  if (!mainKey) return null
+
+  parts.push(mainKey)
+  return parts.join('+')
+}
+
+let recordingHotkey = false
+hotkeyRecordBtn.addEventListener('click', () => {
+  if (recordingHotkey) return
+  recordingHotkey = true
+  hotkeyRecordBtn.classList.add('recording')
+  hotkeyRecordBtn.innerText = 'Press keys...'
+  hotkeyStatus.textContent = 'Waiting for a key combo (e.g. Ctrl+Shift+L)...'
+  hotkeyStatus.classList.remove('error')
+
+  const stopRecording = () => {
+    recordingHotkey = false
+    hotkeyRecordBtn.classList.remove('recording')
+    hotkeyRecordBtn.innerText = 'Set'
+    document.removeEventListener('keydown', onKeydown, true)
+  }
+
+  const onKeydown = async (e) => {
+    e.preventDefault()
+    if (e.key === 'Escape') {
+      stopRecording()
+      hotkeyStatus.textContent = ''
+      return
+    }
+    const accelerator = keyEventToAccelerator(e)
+    if (!accelerator) return
+    stopRecording()
+    const result = await window.api.setHotkey(accelerator)
+    if (result.ok) {
+      applyHotkey(result.hotkey)
+      hotkeyStatus.textContent = 'Saved'
+    } else {
+      applyHotkey(result.hotkey)
+      hotkeyStatus.textContent = 'That combo is already in use elsewhere'
+      hotkeyStatus.classList.add('error')
+    }
+  }
+  document.addEventListener('keydown', onKeydown, true)
+})
+
+window.api.loadHotkey().then((hotkey) => {
+  applyHotkey(hotkey)
 })

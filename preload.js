@@ -14,6 +14,8 @@ contextBridge.exposeInMainWorld('api', {
   switchBuild: (buildId) => ipcRenderer.send('switch-build', buildId),
   createBuild: (name) => ipcRenderer.send('create-build', name),
   importBuild: (url) => ipcRenderer.invoke('import-build', url),
+  loadHotkey: () => ipcRenderer.invoke('load-hotkey'),
+  setHotkey: (accelerator) => ipcRenderer.invoke('set-hotkey', accelerator),
   onItemsUpdated: (callback) =>
     ipcRenderer.on('items-updated', (_event, payload) => callback(payload)),
   onBuildsUpdated: (callback) =>
