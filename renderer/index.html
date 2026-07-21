@@ -7,27 +7,43 @@
 </head>
 <body>
   <div id="panel">
-    <div id="header">
-      <span id="title">🗡️ League Checklist</span>
-      <div id="header-actions">
-        <button id="settings-btn" title="Configurações">⚙</button>
-        <button id="close-btn" title="Esconder (Ctrl+Shift+L)">✕</button>
+    <div id="main-col">
+      <div id="header">
+        <span id="title">🗡️ League Checklist</span>
+        <div id="header-actions">
+          <button id="settings-btn" title="Editar (adicionar/remover/reordenar)">⚙</button>
+          <button id="close-btn" title="Esconder (Ctrl+Shift+L)">✕</button>
+        </div>
+      </div>
+
+      <div id="settings-panel">
+        <div id="build-row">
+          <label for="build-select">Build</label>
+          <select id="build-select"></select>
+          <button id="add-build-btn" title="Nova build">+</button>
+        </div>
+      </div>
+
+      <div id="sections"></div>
+
+      <div id="add-section-row">
+        <input id="new-section-input" type="text" placeholder="Nova sessão...">
+        <button id="add-section-btn">+</button>
+      </div>
+
+      <div id="hint">Ctrl+Shift+L para mostrar/esconder</div>
+    </div>
+
+    <div id="regex-col">
+      <div id="regex-title">Regex</div>
+      <div id="regex-grid"></div>
+      <button id="add-regex-btn" title="Novo atalho de regex">+</button>
+      <div id="regex-add-form" class="hidden">
+        <input id="regex-label-input" type="text" placeholder="Nome" maxlength="12">
+        <input id="regex-pattern-input" type="text" placeholder="Regex">
+        <button id="regex-confirm-btn">✓</button>
       </div>
     </div>
-
-    <div id="settings-panel" class="hidden">
-      <label for="character-name-input">Personagem</label>
-      <input id="character-name-input" type="text" placeholder="Nome do boneco...">
-    </div>
-
-    <div id="sections"></div>
-
-    <div id="add-section-row">
-      <input id="new-section-input" type="text" placeholder="Nova sessão...">
-      <button id="add-section-btn">+</button>
-    </div>
-
-    <div id="hint">Ctrl+Shift+L para mostrar/esconder</div>
   </div>
 
   <script src="renderer.js"></script>

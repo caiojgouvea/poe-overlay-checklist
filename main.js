@@ -4,8 +4,9 @@ const fs = require('fs')
 const { execFile } = require('child_process')
 
 const DATA_FILE = path.join(app.getPath('userData'), 'checklist-data.json')
+const BUILDS_FILE = path.join(app.getPath('userData'), 'builds.json')
 const WINDOW_FILE = path.join(app.getPath('userData'), 'window-state.json')
-const SETTINGS_FILE = path.join(app.getPath('userData'), 'settings.json')
+const REGEX_FILE = path.join(app.getPath('userData'), 'regex-shortcuts.json')
 const HOTKEY = 'Control+Shift+L'
 const CLIPBOARD_POLL_MS = 500
 const GAME_WINDOW_TITLE = 'Path of Exile'
@@ -69,7 +70,10 @@ function migrateLegacyItems(items) {
   return [{ id: randomUUID(), title: 'Checklist', collapsed: false, items }]
 }
 
-function loadItems() {
+// Antes de existirem builds, a checklist ficava direto em checklist-data.json.
+// Se ainda não existe builds.json, usamos esse conteúdo pra criar a primeira
+// build (nomeada "Venom Gyre") sem perder nada que já estava salvo.
+function loadLegacySections() {
   try {
     const raw = fs.readFileSync(DATA_FILE, 'utf-8')
     const parsed = JSON.parse(raw)
@@ -82,29 +86,76 @@ function loadItems() {
   }
 }
 
+function loadBuildsState() {
+  try {
+    const raw = fs.readFileSync(BUILDS_FILE, 'utf-8')
+    const parsed = JSON.parse(raw)
+    if (parsed && Array.isArray(parsed.builds) && parsed.builds.length > 0) {
+      return parsed
+    }
+    throw new Error('invalid builds file')
+  } catch (e) {
+    const build = { id: randomUUID(), name: 'Venom Gyre', sections: loadLegacySections() }
+    const state = { activeBuildId: build.id, builds: [build] }
+    saveBuildsState(state)
+    return state
+  }
+}
+
+function saveBuildsState(state) {
+  try {
+    fs.writeFileSync(BUILDS_FILE, JSON.stringify(state, null, 2), 'utf-8')
+  } catch (e) {
+    console.error('Falha ao salvar builds:', e)
+  }
+}
+
+function getActiveBuild(state) {
+  return state.builds.find((b) => b.id === state.activeBuildId) || state.builds[0]
+}
+
+function loadItems() {
+  const state = loadBuildsState()
+  return getActiveBuild(state).sections
+}
+
 function saveItems(sections) {
-  try {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(sections, null, 2), 'utf-8')
-  } catch (e) {
-    console.error('Falha ao salvar checklist:', e)
-  }
+  const state = loadBuildsState()
+  const build = getActiveBuild(state)
+  build.sections = sections
+  saveBuildsState(state)
 }
 
-function loadSettings() {
-  try {
-    const raw = fs.readFileSync(SETTINGS_FILE, 'utf-8')
-    return JSON.parse(raw)
-  } catch (e) {
-    return { characterName: '' }
-  }
+function listBuilds() {
+  const state = loadBuildsState()
+  return { builds: state.builds.map((b) => ({ id: b.id, name: b.name })), activeBuildId: state.activeBuildId }
 }
 
-function saveSettings(settings) {
-  try {
-    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2), 'utf-8')
-  } catch (e) {
-    console.error('Falha ao salvar configurações:', e)
-  }
+function switchBuild(buildId) {
+  const state = loadBuildsState()
+  if (!state.builds.some((b) => b.id === buildId)) return
+  state.activeBuildId = buildId
+  saveBuildsState(state)
+  broadcastBuildsUpdated()
+}
+
+function createBuild(name) {
+  const state = loadBuildsState()
+  const build = { id: randomUUID(), name: name || 'Nova build', sections: [] }
+  state.builds.push(build)
+  state.activeBuildId = build.id
+  saveBuildsState(state)
+  broadcastBuildsUpdated()
+}
+
+function broadcastBuildsUpdated() {
+  if (!mainWindow) return
+  const state = loadBuildsState()
+  mainWindow.webContents.send('builds-updated', {
+    builds: state.builds.map((b) => ({ id: b.id, name: b.name })),
+    activeBuildId: state.activeBuildId,
+    sections: getActiveBuild(state).sections
+  })
 }
 
 // Texto copiado de um item no PoE (Ctrl+C em cima dele) sempre tem uma
@@ -165,6 +216,23 @@ function tryAutoCheckFromClipboard() {
   }
 }
 
+function loadRegexes() {
+  try {
+    const raw = fs.readFileSync(REGEX_FILE, 'utf-8')
+    return JSON.parse(raw)
+  } catch (e) {
+    return []
+  }
+}
+
+function saveRegexes(list) {
+  try {
+    fs.writeFileSync(REGEX_FILE, JSON.stringify(list, null, 2), 'utf-8')
+  } catch (e) {
+    console.error('Falha ao salvar regex:', e)
+  }
+}
+
 function findItemById(sections, itemId) {
   for (const section of sections) {
     const item = section.items.find((i) => i.id === itemId)
@@ -208,6 +276,12 @@ function searchAndCheckItem(itemId) {
   if (mainWindow) {
     mainWindow.webContents.send('items-updated', { sections, matchedItemId: item.id })
   }
+}
+
+function searchRegexInGame(pattern) {
+  clipboard.writeText(pattern)
+  lastClipboardText = pattern
+  pasteIntoGame()
 }
 
 function createWindow() {
@@ -259,10 +333,14 @@ app.whenReady().then(() => {
 
   ipcMain.handle('load-items', () => loadItems())
   ipcMain.on('save-items', (_event, items) => saveItems(items))
-  ipcMain.handle('load-settings', () => loadSettings())
-  ipcMain.on('save-settings', (_event, settings) => saveSettings(settings))
   ipcMain.on('search-item', (_event, itemId) => searchAndCheckItem(itemId))
   ipcMain.on('hide-window', () => mainWindow && mainWindow.hide())
+  ipcMain.handle('load-regexes', () => loadRegexes())
+  ipcMain.on('save-regexes', (_event, list) => saveRegexes(list))
+  ipcMain.on('search-regex', (_event, pattern) => searchRegexInGame(pattern))
+  ipcMain.handle('load-builds', () => listBuilds())
+  ipcMain.on('switch-build', (_event, buildId) => switchBuild(buildId))
+  ipcMain.on('create-build', (_event, name) => createBuild(name))
 
   setInterval(tryAutoCheckFromClipboard, CLIPBOARD_POLL_MS)
 })

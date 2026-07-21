@@ -1,12 +1,22 @@
 let sections = []
+let draggedInfo = null
 
 const sectionsEl = document.getElementById('sections')
 const newSectionInput = document.getElementById('new-section-input')
 const addSectionBtn = document.getElementById('add-section-btn')
 const settingsBtn = document.getElementById('settings-btn')
-const settingsPanel = document.getElementById('settings-panel')
-const characterNameInput = document.getElementById('character-name-input')
 const closeBtn = document.getElementById('close-btn')
+const buildSelect = document.getElementById('build-select')
+const addBuildBtn = document.getElementById('add-build-btn')
+
+let regexes = []
+
+const regexGridEl = document.getElementById('regex-grid')
+const addRegexBtn = document.getElementById('add-regex-btn')
+const regexAddForm = document.getElementById('regex-add-form')
+const regexLabelInput = document.getElementById('regex-label-input')
+const regexPatternInput = document.getElementById('regex-pattern-input')
+const regexConfirmBtn = document.getElementById('regex-confirm-btn')
 
 function uid() {
   return crypto.randomUUID()
@@ -23,12 +33,60 @@ function render() {
   }
 }
 
+function moveItem(fromSectionId, itemId, toSectionId, targetItemId) {
+  const fromSection = sections.find((s) => s.id === fromSectionId)
+  if (!fromSection) return
+  const idx = fromSection.items.findIndex((i) => i.id === itemId)
+  if (idx === -1) return
+  const [moved] = fromSection.items.splice(idx, 1)
+
+  const toSection = sections.find((s) => s.id === toSectionId)
+  if (!toSection) return
+  const targetIdx = toSection.items.findIndex((i) => i.id === targetItemId)
+  if (targetIdx === -1) toSection.items.push(moved)
+  else toSection.items.splice(targetIdx, 0, moved)
+
+  persist()
+  render()
+}
+
+function moveSection(sectionId, targetSectionId) {
+  const idx = sections.findIndex((s) => s.id === sectionId)
+  if (idx === -1) return
+  const [moved] = sections.splice(idx, 1)
+  const targetIdx = sections.findIndex((s) => s.id === targetSectionId)
+  if (targetIdx === -1) sections.push(moved)
+  else sections.splice(targetIdx, 0, moved)
+  persist()
+  render()
+}
+
 function buildSectionEl(section) {
   const wrap = document.createElement('div')
   wrap.className = 'section'
+  wrap.addEventListener('dragover', (e) => {
+    if (!draggedInfo || draggedInfo.type !== 'section') return
+    e.preventDefault()
+  })
+  wrap.addEventListener('drop', (e) => {
+    e.preventDefault()
+    if (!draggedInfo || draggedInfo.type !== 'section') return
+    moveSection(draggedInfo.sectionId, section.id)
+    draggedInfo = null
+  })
 
   const header = document.createElement('div')
   header.className = 'section-header'
+
+  const sectionHandle = document.createElement('span')
+  sectionHandle.className = 'drag-handle section-drag-handle'
+  sectionHandle.innerText = '⠿'
+  sectionHandle.draggable = true
+  sectionHandle.addEventListener('dragstart', (e) => {
+    e.stopPropagation()
+    draggedInfo = { type: 'section', sectionId: section.id }
+    e.dataTransfer.effectAllowed = 'move'
+  })
 
   const chevron = document.createElement('span')
   chevron.className = 'chevron'
@@ -64,6 +122,7 @@ function buildSectionEl(section) {
     render()
   })
 
+  header.appendChild(sectionHandle)
   header.appendChild(chevron)
   header.appendChild(title)
   header.appendChild(delBtn)
@@ -116,6 +175,27 @@ function buildItemEl(section, item) {
   li.dataset.itemId = item.id
   if (item.done) li.classList.add('done')
 
+  li.addEventListener('dragover', (e) => {
+    if (!draggedInfo || draggedInfo.type !== 'item') return
+    e.preventDefault()
+  })
+  li.addEventListener('drop', (e) => {
+    e.preventDefault()
+    if (!draggedInfo || draggedInfo.type !== 'item') return
+    moveItem(draggedInfo.sectionId, draggedInfo.itemId, section.id, item.id)
+    draggedInfo = null
+  })
+
+  const handle = document.createElement('span')
+  handle.className = 'drag-handle item-drag-handle'
+  handle.innerText = '⠿'
+  handle.draggable = true
+  handle.addEventListener('dragstart', (e) => {
+    e.stopPropagation()
+    draggedInfo = { type: 'item', sectionId: section.id, itemId: item.id }
+    e.dataTransfer.effectAllowed = 'move'
+  })
+
   const checkbox = document.createElement('input')
   checkbox.type = 'checkbox'
   checkbox.checked = item.done
@@ -167,10 +247,46 @@ function buildItemEl(section, item) {
     render()
   })
 
+  li.appendChild(handle)
   li.appendChild(checkbox)
   li.appendChild(text)
   li.appendChild(delBtn)
   return li
+}
+
+function renderRegexes() {
+  regexGridEl.innerHTML = ''
+  for (const item of regexes) {
+    regexGridEl.appendChild(buildRegexEl(item))
+  }
+}
+
+function buildRegexEl(item) {
+  const btn = document.createElement('button')
+  btn.className = 'regex-square'
+  btn.title = item.pattern
+  btn.innerText = item.label
+
+  btn.addEventListener('click', () => {
+    window.api.searchRegex(item.pattern)
+  })
+
+  const delBtn = document.createElement('span')
+  delBtn.className = 'regex-del-btn'
+  delBtn.innerText = '✕'
+  delBtn.title = 'Remover'
+  delBtn.addEventListener('click', (e) => {
+    e.stopPropagation()
+    regexes = regexes.filter((r) => r.id !== item.id)
+    window.api.saveRegexes(regexes)
+    renderRegexes()
+  })
+
+  const wrap = document.createElement('div')
+  wrap.className = 'regex-square-wrap'
+  wrap.appendChild(btn)
+  wrap.appendChild(delBtn)
+  return wrap
 }
 
 function addSection() {
@@ -188,22 +304,11 @@ newSectionInput.addEventListener('keydown', (e) => {
 })
 
 settingsBtn.addEventListener('click', () => {
-  settingsPanel.classList.toggle('hidden')
+  document.body.classList.toggle('edit-mode')
 })
 
 closeBtn.addEventListener('click', () => {
   window.api.hideWindow()
-})
-
-characterNameInput.addEventListener('blur', () => {
-  window.api.saveSettings({ characterName: characterNameInput.value.trim() })
-})
-characterNameInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') characterNameInput.blur()
-})
-
-window.api.loadSettings().then((settings) => {
-  characterNameInput.value = settings.characterName || ''
 })
 
 window.api.onItemsUpdated(({ sections: updated, matchedItemId }) => {
@@ -216,6 +321,66 @@ window.api.onItemsUpdated(({ sections: updated, matchedItemId }) => {
       setTimeout(() => li.classList.remove('flash'), 1500)
     }
   }
+})
+
+function renderBuildSelect({ builds, activeBuildId }) {
+  buildSelect.innerHTML = ''
+  for (const build of builds) {
+    const option = document.createElement('option')
+    option.value = build.id
+    option.innerText = build.name
+    if (build.id === activeBuildId) option.selected = true
+    buildSelect.appendChild(option)
+  }
+}
+
+buildSelect.addEventListener('change', () => {
+  window.api.switchBuild(buildSelect.value)
+})
+
+addBuildBtn.addEventListener('click', () => {
+  const name = window.prompt('Nome da nova build:')
+  if (name && name.trim()) window.api.createBuild(name.trim())
+})
+
+window.api.onBuildsUpdated(({ builds, activeBuildId, sections: updated }) => {
+  renderBuildSelect({ builds, activeBuildId })
+  sections = updated
+  render()
+})
+
+window.api.loadBuilds().then((state) => {
+  renderBuildSelect(state)
+})
+
+addRegexBtn.addEventListener('click', () => {
+  regexAddForm.classList.toggle('hidden')
+  if (!regexAddForm.classList.contains('hidden')) regexLabelInput.focus()
+})
+
+function confirmAddRegex() {
+  const label = regexLabelInput.value.trim()
+  const pattern = regexPatternInput.value.trim()
+  if (!label || !pattern) return
+  regexes.push({ id: uid(), label, pattern })
+  window.api.saveRegexes(regexes)
+  renderRegexes()
+  regexLabelInput.value = ''
+  regexPatternInput.value = ''
+  regexAddForm.classList.add('hidden')
+}
+
+regexConfirmBtn.addEventListener('click', confirmAddRegex)
+regexPatternInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') confirmAddRegex()
+})
+regexLabelInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') regexPatternInput.focus()
+})
+
+window.api.loadRegexes().then((loaded) => {
+  regexes = loaded
+  renderRegexes()
 })
 
 window.api.loadItems().then((loaded) => {
