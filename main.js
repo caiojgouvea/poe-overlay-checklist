@@ -1,17 +1,22 @@
 const { app, BrowserWindow, globalShortcut, ipcMain, screen, clipboard } = require('electron')
 const path = require('path')
 const fs = require('fs')
+const https = require('https')
+const zlib = require('zlib')
 const { execFile } = require('child_process')
 
 const DATA_FILE = path.join(app.getPath('userData'), 'checklist-data.json')
 const BUILDS_FILE = path.join(app.getPath('userData'), 'builds.json')
 const WINDOW_FILE = path.join(app.getPath('userData'), 'window-state.json')
+const REGEX_WINDOW_FILE = path.join(app.getPath('userData'), 'regex-window-state.json')
 const REGEX_FILE = path.join(app.getPath('userData'), 'regex-shortcuts.json')
 const HOTKEY = 'Control+Shift+L'
 const CLIPBOARD_POLL_MS = 500
 const GAME_WINDOW_TITLE = 'Path of Exile'
 
 let mainWindow
+let regexWindow
+let toggleWindow
 let lastClipboardText = ''
 
 function loadWindowState() {
@@ -30,6 +35,30 @@ function saveWindowState() {
     fs.writeFileSync(WINDOW_FILE, JSON.stringify({ x, y, width, height }), 'utf-8')
   } catch (e) {
     console.error('Falha ao salvar posição/tamanho da janela:', e)
+  }
+}
+
+function loadRegexWindowState() {
+  try {
+    const raw = fs.readFileSync(REGEX_WINDOW_FILE, 'utf-8')
+    return JSON.parse(raw)
+  } catch (e) {
+    return null
+  }
+}
+
+function saveRegexWindowState() {
+  const savedState = loadRegexWindowState() || {}
+  const visible = regexWindow ? regexWindow.isVisible() : !!savedState.visible
+  let bounds = savedState
+  if (regexWindow) {
+    const { x, y, width, height } = regexWindow.getBounds()
+    bounds = { x, y, width, height }
+  }
+  try {
+    fs.writeFileSync(REGEX_WINDOW_FILE, JSON.stringify({ ...bounds, visible }), 'utf-8')
+  } catch (e) {
+    console.error('Falha ao salvar posição/tamanho da janela de regex:', e)
   }
 }
 
@@ -180,6 +209,19 @@ function normalize(text) {
     .trim()
 }
 
+// A checklist item may be a linked group (imported from a build) with
+// support gems nested under it; visit both levels.
+function forEachItem(sections, callback) {
+  for (const section of sections) {
+    for (const item of section.items) {
+      callback(item)
+      if (item.supports) {
+        for (const support of item.supports) callback(support)
+      }
+    }
+  }
+}
+
 function tryAutoCheckFromClipboard() {
   const text = clipboard.readText()
   if (!text || text === lastClipboardText) return
@@ -194,18 +236,14 @@ function tryAutoCheckFromClipboard() {
   const sections = loadItems()
   let matchedItem = null
 
-  for (const section of sections) {
-    for (const item of section.items) {
-      if (item.done) continue
-      const normItemText = normalize(item.text)
-      if (!normItemText || normItemText.length < 3) continue
-      if (normItemText === normItemName || normItemText.includes(normItemName) || normItemName.includes(normItemText)) {
-        matchedItem = item
-        break
-      }
+  forEachItem(sections, (item) => {
+    if (matchedItem || item.done) return
+    const normItemText = normalize(item.text)
+    if (!normItemText || normItemText.length < 3) return
+    if (normItemText === normItemName || normItemText.includes(normItemName) || normItemName.includes(normItemText)) {
+      matchedItem = item
     }
-    if (matchedItem) break
-  }
+  })
 
   if (!matchedItem) return
 
@@ -235,8 +273,13 @@ function saveRegexes(list) {
 
 function findItemById(sections, itemId) {
   for (const section of sections) {
-    const item = section.items.find((i) => i.id === itemId)
-    if (item) return item
+    for (const item of section.items) {
+      if (item.id === itemId) return item
+      if (item.supports) {
+        const support = item.supports.find((s) => s.id === itemId)
+        if (support) return support
+      }
+    }
   }
   return null
 }
@@ -278,6 +321,226 @@ function searchAndCheckItem(itemId) {
   }
 }
 
+function fetchText(url, redirectsLeft = 3) {
+  return new Promise((resolve, reject) => {
+    https
+      .get(url, { headers: { 'User-Agent': 'poe-league-checklist' } }, (res) => {
+        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location && redirectsLeft > 0) {
+          res.resume()
+          fetchText(new URL(res.headers.location, url).toString(), redirectsLeft - 1).then(resolve, reject)
+          return
+        }
+        if (res.statusCode !== 200) {
+          res.resume()
+          reject(new Error('HTTP ' + res.statusCode))
+          return
+        }
+        let data = ''
+        res.setEncoding('utf-8')
+        res.on('data', (chunk) => (data += chunk))
+        res.on('end', () => resolve(data))
+      })
+      .on('error', reject)
+  })
+}
+
+// Sites like pobb.in and pastebin.com host the raw PoB code behind a
+// "/raw" (or similar) endpoint; the page itself is HTML, not the code.
+function rawCodeUrl(inputUrl) {
+  const url = new URL(inputUrl)
+  if (url.hostname.includes('pobb.in') && !url.pathname.endsWith('/raw')) {
+    return url.origin + url.pathname.replace(/\/$/, '') + '/raw'
+  }
+  if (url.hostname.includes('pastebin.com') && !url.pathname.startsWith('/raw/')) {
+    return url.origin + '/raw' + url.pathname
+  }
+  return inputUrl
+}
+
+function decodePobCode(code) {
+  const b64 = code.trim().replace(/-/g, '+').replace(/_/g, '/')
+  const buf = Buffer.from(b64, 'base64')
+  return zlib.inflateSync(buf).toString('utf-8')
+}
+
+function xmlUnescape(text) {
+  return text
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&#10;/g, '\n')
+    .replace(/&#13;/g, '')
+    .replace(/&amp;/g, '&')
+}
+
+// Some build guides write a leveling plan by hand into PoB's Notes field,
+// grouped under headers like "Level 12", "Act 3", "Stage 2". If we find
+// that structure we use it as-is; each header becomes a section.
+const NOTES_HEADER_RE = /^(?:act\s*\d+|level\s*\d+\+?(?:\s*[-–to]+\s*\d+)?|lvl\s*\d+\+?|stage\s*\d+)\b.*$/i
+
+function parseNotesIntoSections(xml) {
+  const match = xml.match(/<Notes>\s*(?:<!\[CDATA\[([\s\S]*?)\]\]>|([\s\S]*?))\s*<\/Notes>/)
+  if (!match) return []
+  const raw = xmlUnescape(match[1] != null ? match[1] : match[2] || '')
+  const lines = raw.split(/\r?\n/).map((l) => l.trim())
+
+  const sections = []
+  let current = null
+  for (const line of lines) {
+    if (!line) continue
+    if (NOTES_HEADER_RE.test(line)) {
+      current = { id: randomUUID(), title: line.replace(/:$/, ''), collapsed: false, items: [] }
+      sections.push(current)
+    } else if (current) {
+      current.items.push({ id: randomUUID(), text: line, done: false })
+    }
+  }
+  return sections
+}
+
+// Support gems, used to tell them apart from active skills (auras,
+// heralds, curses, etc.) that happen to share a socket group. The item id
+// PoB exports for each gem (gemId="Metadata/Items/Gems/SupportGemX" vs
+// "...SkillGemX") comes straight from the game's own data and is always
+// accurate/up to date — far more reliable than any name list we bundle.
+// A downloaded name list (data/support-gems.json, from RePoE's game data
+// dump) is kept only as a fallback for the rare gem tag with no gemId.
+const SUPPORT_GEM_NAME_FALLBACK = new Set(
+  JSON.parse(fs.readFileSync(path.join(__dirname, 'data', 'support-gems.json'), 'utf-8'))
+)
+
+function gemsInBlock(xmlBlock) {
+  const gems = []
+  const seen = new Set()
+  const gemTagRe = /<Gem\b[^>]*\/?>/g
+  let m
+  while ((m = gemTagRe.exec(xmlBlock))) {
+    const tag = m[0]
+    const nameMatch = tag.match(/\bnameSpec="([^"]+)"/)
+    if (!nameMatch) continue
+    const name = xmlUnescape(nameMatch[1])
+    if (seen.has(name)) continue
+    seen.add(name)
+
+    const idMatch = tag.match(/\bgemId="([^"]+)"/)
+    const isSupport = idMatch
+      ? /(^|\/)SupportGem/i.test(idMatch[1])
+      : SUPPORT_GEM_NAME_FALLBACK.has(name)
+    gems.push({ name, isSupport })
+  }
+  return gems
+}
+
+function gemNamesInBlock(xmlBlock) {
+  return gemsInBlock(xmlBlock).map((g) => g.name)
+}
+
+// Within a socket group (<Skill>...</Skill>), nest each support gem under
+// the active skill gem right before it in the list — that's the order PoB
+// stores them in, and it holds even when a group has multiple active
+// skills sharing sockets (e.g. a utility skill + its buff support sitting
+// next to an unrelated aura). A support with no preceding active skill in
+// the group (rare) is listed on its own instead of guessing an owner.
+function linkGroupsInBlock(xmlBlock) {
+  const groups = []
+  const skillRe = /<Skill\b[^>]*>([\s\S]*?)<\/Skill>/g
+  let m
+  while ((m = skillRe.exec(xmlBlock))) {
+    const gems = gemsInBlock(m[1])
+    let current = null
+    for (const gem of gems) {
+      if (gem.isSupport) {
+        if (current) current.supports.push(gem.name)
+        else groups.push({ main: gem.name, supports: [] })
+      } else {
+        current = { main: gem.name, supports: [] }
+        groups.push(current)
+      }
+    }
+  }
+  return groups
+}
+
+function linkGroupsToItems(groups) {
+  return groups.map((group) => ({
+    id: randomUUID(),
+    text: group.main,
+    done: false,
+    supports: group.supports.map((name) => ({ id: randomUUID(), text: name, done: false }))
+  }))
+}
+
+// Most PoB leveling guides split gems by stage using PoB's own "skill
+// sets" feature (one SkillSet per level/act, each with its own title).
+// When there's more than one, that's a much stronger signal than Notes.
+function parseSkillSetSections(xml) {
+  const sections = []
+  const setRe = /<SkillSet\b([^>]*)>([\s\S]*?)<\/SkillSet>/g
+  let m
+  let index = 0
+  while ((m = setRe.exec(xml))) {
+    index++
+    const attrs = m[1]
+    const body = m[2]
+    const titleMatch = attrs.match(/\btitle="([^"]*)"/)
+    const title = titleMatch && titleMatch[1].trim() ? xmlUnescape(titleMatch[1]) : `Skill set ${index}`
+    const groups = linkGroupsInBlock(body)
+    if (groups.length > 0) {
+      sections.push({
+        id: randomUUID(),
+        title,
+        collapsed: false,
+        items: linkGroupsToItems(groups)
+      })
+    }
+  }
+  return sections.length > 1 ? sections : []
+}
+
+// Last resort when the build has no per-stage skill sets or leveling
+// notes: list every gem in the build as a single section.
+function parseGemsFallback(xml) {
+  const gemNames = gemNamesInBlock(xml)
+  if (gemNames.length === 0) return []
+  return [
+    {
+      id: randomUUID(),
+      title: 'Imported gems',
+      collapsed: false,
+      items: gemNames.map((name) => ({ id: randomUUID(), text: name, done: false }))
+    }
+  ]
+}
+
+async function importBuildFromUrl(url) {
+  const raw = await fetchText(rawCodeUrl(url))
+  const xml = decodePobCode(raw)
+
+  const skillSetSections = parseSkillSetSections(xml)
+  const notesSections = skillSetSections.length === 0 ? parseNotesIntoSections(xml) : []
+  const sections =
+    skillSetSections.length > 0
+      ? skillSetSections
+      : notesSections.length > 0
+        ? notesSections
+        : parseGemsFallback(xml)
+
+  if (sections.length === 0) {
+    throw new Error('No leveling plan or gems found in this build')
+  }
+  sections.forEach((section, i) => {
+    section.collapsed = i !== 0
+  })
+
+  const state = loadBuildsState()
+  const build = getActiveBuild(state)
+  build.sections = build.sections.concat(sections)
+  saveBuildsState(state)
+  broadcastBuildsUpdated()
+  return { addedSections: sections.length }
+}
+
 function searchRegexInGame(pattern) {
   clipboard.writeText(pattern)
   lastClipboardText = pattern
@@ -311,20 +574,124 @@ function createWindow() {
   mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
   mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'))
 
-  mainWindow.on('moved', saveWindowState)
-  mainWindow.on('resized', saveWindowState)
+  mainWindow.on('moved', () => {
+    saveWindowState()
+    positionToggleWindow()
+  })
+  mainWindow.on('resized', () => {
+    saveWindowState()
+    positionToggleWindow()
+  })
 }
 
 function toggleVisibility() {
   if (mainWindow.isVisible()) {
     mainWindow.hide()
+    if (toggleWindow) toggleWindow.hide()
+    if (regexWindow) regexWindow.hide()
   } else {
     mainWindow.show()
+    if (toggleWindow) toggleWindow.show()
+    const savedRegexState = loadRegexWindowState()
+    if (regexWindow && savedRegexState && savedRegexState.visible) regexWindow.show()
   }
+}
+
+// Small standalone window holding just the REGEX toggle button, kept
+// glued to the right edge of the main window but living entirely outside
+// it, so it never participates in the main window's own layout.
+function positionToggleWindow() {
+  if (!toggleWindow || !mainWindow) return
+  const mainBounds = mainWindow.getBounds()
+  const { width, height } = toggleWindow.getBounds()
+  toggleWindow.setBounds({
+    x: mainBounds.x + mainBounds.width + 2,
+    y: mainBounds.y + Math.round((mainBounds.height - height) / 2),
+    width,
+    height
+  })
+}
+
+function createToggleWindow() {
+  toggleWindow = new BrowserWindow({
+    width: 20,
+    height: 64,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    resizable: false,
+    skipTaskbar: true,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  })
+
+  toggleWindow.setAlwaysOnTop(true, 'screen-saver')
+  toggleWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
+  toggleWindow.loadFile(path.join(__dirname, 'renderer', 'regex-toggle.html'))
+  positionToggleWindow()
+}
+
+// The regex shortcut panel lives in its own OS window so it can never
+// affect the size/layout of the main checklist window.
+function createRegexWindow() {
+  const savedState = loadRegexWindowState()
+  const mainBounds = mainWindow.getBounds()
+
+  regexWindow = new BrowserWindow({
+    width: savedState && savedState.width ? savedState.width : 130,
+    height: savedState && savedState.height ? savedState.height : mainBounds.height,
+    x: savedState && savedState.x != null ? savedState.x : mainBounds.x + mainBounds.width + 8,
+    y: savedState && savedState.y != null ? savedState.y : mainBounds.y,
+    minWidth: 90,
+    minHeight: 120,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    resizable: true,
+    skipTaskbar: true,
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  })
+
+  regexWindow.setAlwaysOnTop(true, 'screen-saver')
+  regexWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
+  regexWindow.loadFile(path.join(__dirname, 'renderer', 'regex.html'))
+
+  regexWindow.on('moved', saveRegexWindowState)
+  regexWindow.on('resized', saveRegexWindowState)
+  regexWindow.on('close', (event) => {
+    event.preventDefault()
+    regexWindow.hide()
+    saveRegexWindowState()
+  })
+}
+
+function toggleRegexWindow() {
+  if (!regexWindow) createRegexWindow()
+  if (regexWindow.isVisible()) {
+    regexWindow.hide()
+  } else {
+    regexWindow.show()
+  }
+  saveRegexWindowState()
 }
 
 app.whenReady().then(() => {
   createWindow()
+  createToggleWindow()
+
+  const savedRegexState = loadRegexWindowState()
+  if (savedRegexState && savedRegexState.visible) {
+    createRegexWindow()
+    regexWindow.show()
+  }
 
   const registered = globalShortcut.register(HOTKEY, toggleVisibility)
   if (!registered) {
@@ -335,11 +702,11 @@ app.whenReady().then(() => {
   ipcMain.on('save-items', (_event, items) => saveItems(items))
   ipcMain.on('search-item', (_event, itemId) => searchAndCheckItem(itemId))
   ipcMain.on('hide-window', () => mainWindow && mainWindow.hide())
-  ipcMain.on('resize-window-by', (_event, deltaWidth) => {
-    if (!mainWindow) return
-    const { x, y, width, height } = mainWindow.getBounds()
-    mainWindow.setBounds({ x, y, width: Math.round(width + deltaWidth), height })
-    saveWindowState()
+  ipcMain.on('toggle-regex-window', () => toggleRegexWindow())
+  ipcMain.on('hide-regex-window', () => {
+    if (!regexWindow) return
+    regexWindow.hide()
+    saveRegexWindowState()
   })
   ipcMain.handle('load-regexes', () => loadRegexes())
   ipcMain.on('save-regexes', (_event, list) => saveRegexes(list))
@@ -347,6 +714,14 @@ app.whenReady().then(() => {
   ipcMain.handle('load-builds', () => listBuilds())
   ipcMain.on('switch-build', (_event, buildId) => switchBuild(buildId))
   ipcMain.on('create-build', (_event, name) => createBuild(name))
+  ipcMain.handle('import-build', async (_event, url) => {
+    try {
+      const result = await importBuildFromUrl(url)
+      return { ok: true, ...result }
+    } catch (e) {
+      return { ok: false, error: e.message }
+    }
+  })
 
   setInterval(tryAutoCheckFromClipboard, CLIPBOARD_POLL_MS)
 })

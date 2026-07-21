@@ -110,48 +110,18 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding-right: 8px;
 }
 
-/* ---------- Column resizer ---------- */
+/* ---------- Regex window toggle button (its own tiny OS window, entirely
+   outside the main checklist window so it never affects its layout) ---------- */
 
-#col-resizer {
-  width: 18px;
-  flex-shrink: 0;
-  cursor: col-resize;
-  position: relative;
-  -webkit-app-region: no-drag;
-}
-
-#col-resizer::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 2px;
-  width: 2px;
-  border-radius: 1px;
-  background: var(--accent-border);
-  z-index: 0;
-}
-
-#col-resizer:hover::after,
-#col-resizer.dragging::after {
-  background: var(--accent);
-}
-
-#col-toggle-btn {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 1;
-  width: 16px;
-  height: 60px;
+#regex-toggle-btn {
+  width: 100%;
+  height: 100%;
   background: var(--btn-bg);
   color: var(--btn-fg);
   border: 1px solid var(--accent-border);
-  border-radius: 3px;
+  border-radius: 5px;
   writing-mode: vertical-rl;
   text-orientation: mixed;
   letter-spacing: 1px;
@@ -165,23 +135,8 @@ html, body {
   -webkit-app-region: no-drag;
 }
 
-#col-toggle-btn:hover {
+#regex-toggle-btn:hover {
   background: var(--btn-bg-hover);
-}
-
-body.regex-col-collapsed #regex-col {
-  width: 0 !important;
-  min-width: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-body.regex-col-collapsed #col-resizer {
-  cursor: default;
-}
-
-body.regex-col-collapsed #col-resizer::after {
-  display: none;
 }
 
 /* ---------- Header ---------- */
@@ -260,7 +215,8 @@ body.edit-mode #settings-panel {
 }
 
 #build-row,
-#theme-row {
+#theme-row,
+#add-section-row {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -302,6 +258,51 @@ body.edit-mode #settings-panel {
 #theme-select option {
   background: var(--panel-bg);
   color: var(--text-primary);
+}
+
+#import-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#import-url-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--field-bg);
+  border: 1px solid var(--accent-border);
+  border-radius: 4px;
+  padding: 4px 6px;
+  color: var(--text-primary);
+  font-size: 10px;
+  -webkit-app-region: no-drag;
+}
+
+#import-build-btn {
+  background: var(--btn-bg);
+  border: none;
+  border-radius: 4px;
+  padding: 0 8px;
+  color: var(--btn-fg);
+  font-weight: bold;
+  font-size: 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+  -webkit-app-region: no-drag;
+}
+
+#import-build-btn:hover {
+  background: var(--btn-bg-hover);
+}
+
+#import-status {
+  font-size: 9px;
+  color: var(--text-muted);
+  min-height: 11px;
+}
+
+#import-status.error {
+  color: var(--accent-strong);
 }
 
 #add-build-btn {
@@ -366,20 +367,21 @@ body.edit-mode #settings-panel {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  -webkit-app-region: no-drag;
 }
 
 #sections::-webkit-scrollbar,
-#regex-col::-webkit-scrollbar {
+#regex-panel::-webkit-scrollbar {
   width: 4px;
 }
 
 #sections::-webkit-scrollbar-track,
-#regex-col::-webkit-scrollbar-track {
+#regex-panel::-webkit-scrollbar-track {
   background: transparent;
 }
 
 #sections::-webkit-scrollbar-thumb,
-#regex-col::-webkit-scrollbar-thumb {
+#regex-panel::-webkit-scrollbar-thumb {
   background: var(--accent-border);
   border-radius: 2px;
 }
@@ -489,6 +491,34 @@ body.edit-mode .section-del-btn {
   color: var(--text-muted);
 }
 
+.section-items li.support-item {
+  padding-left: 24px;
+  position: relative;
+}
+
+.section-items li.support-item::before {
+  content: '';
+  position: absolute;
+  left: 12px;
+  top: 0;
+  bottom: 50%;
+  width: 8px;
+  border-left: 1px solid var(--accent-border);
+  border-bottom: 1px solid var(--accent-border);
+  border-radius: 0 0 0 4px;
+}
+
+.section-items li.support-item .item-text {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.section-items li.support-item.done .item-text {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
 .section-items li.flash {
   animation: flash-highlight 1.5s ease-out;
 }
@@ -519,6 +549,35 @@ body.edit-mode .section-items li .del-btn {
 .section-items li .del-btn:hover {
   background: var(--btn-bg-hover);
   color: var(--accent-strong);
+}
+
+#new-section-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--field-bg);
+  border: 1px solid var(--accent-border);
+  border-radius: 4px;
+  padding: 4px 6px;
+  color: var(--text-primary);
+  font-size: 11px;
+  -webkit-app-region: no-drag;
+}
+
+#add-section-btn {
+  background: var(--btn-bg);
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  color: var(--btn-fg);
+  font-weight: bold;
+  font-size: 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+  -webkit-app-region: no-drag;
+}
+
+#add-section-btn:hover {
+  background: var(--btn-bg-hover);
 }
 
 .section-add-row {
@@ -557,81 +616,57 @@ body.edit-mode .section-add-row {
   background: var(--btn-bg-hover);
 }
 
-#add-section-btn {
-  display: none;
-  width: 100%;
-  margin-top: 8px;
-  padding: 6px 0;
-  background: var(--btn-bg);
-  border: none;
-  border-radius: 4px;
-  color: var(--btn-fg);
-  font-weight: bold;
-  font-size: 11px;
-  cursor: pointer;
-  -webkit-app-region: no-drag;
-}
-
-body.edit-mode #add-section-btn {
-  display: block;
-}
-
-#add-section-btn:hover {
-  background: var(--btn-bg-hover);
-}
-
-#add-section-form {
-  display: flex;
-  gap: 6px;
-  margin-top: 6px;
-}
-
-#add-section-form.hidden {
-  display: none;
-}
-
-#add-section-form input {
-  flex: 1;
-  background: var(--field-bg);
-  border: 1px solid var(--accent-border);
-  border-radius: 4px;
-  padding: 5px 7px;
-  color: var(--text-primary);
-  font-size: 12px;
-  -webkit-app-region: no-drag;
-}
-
-#section-confirm-btn {
-  background: var(--btn-bg);
-  border: none;
-  border-radius: 4px;
-  width: 26px;
-  color: var(--btn-fg);
-  font-weight: bold;
-  cursor: pointer;
-  -webkit-app-region: no-drag;
-}
-
-#section-confirm-btn:hover {
-  background: var(--btn-bg-hover);
-}
-
 #hint {
   font-size: 9px;
   text-align: center;
   color: var(--text-muted);
 }
 
-/* ---------- Regex shortcut column ---------- */
+/* ---------- Regex shortcut window ---------- */
 
-#regex-col {
-  width: 60px;
-  flex-shrink: 0;
+#regex-panel {
+  width: 100%;
+  height: 100%;
+  background: var(--panel-bg);
+  border: 1px solid var(--accent-border);
+  border-radius: 8px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 6px;
   overflow-y: auto;
+  box-shadow: 0 0 14px var(--accent-bg-hover);
+  -webkit-app-region: no-drag;
+}
+
+#regex-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--accent-border);
+  -webkit-app-region: drag;
+}
+
+#regex-close-btn {
+  background: var(--btn-bg);
+  border: none;
+  border-radius: 5px;
+  color: var(--btn-fg);
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-app-region: no-drag;
+}
+
+#regex-close-btn:hover {
+  background: var(--btn-bg-hover);
+  color: var(--accent-strong);
 }
 
 #regex-title {
@@ -640,8 +675,6 @@ body.edit-mode #add-section-btn {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--accent);
-  text-align: center;
-  padding-bottom: 2px;
 }
 
 #regex-grid {
@@ -697,12 +730,12 @@ body.edit-mode #add-section-btn {
   -webkit-app-region: no-drag;
 }
 
-body.edit-mode .regex-square-wrap:hover .regex-del-btn {
+.regex-square-wrap:hover .regex-del-btn {
   display: block;
 }
 
 #add-regex-btn {
-  display: none;
+  display: block;
   width: 100%;
   background: var(--btn-bg);
   border: 1px dashed var(--accent-border);
@@ -719,18 +752,13 @@ body.edit-mode .regex-square-wrap:hover .regex-del-btn {
   background: var(--btn-bg-hover);
 }
 
-body.edit-mode #add-regex-btn {
-  display: block;
-}
-
 #regex-add-form {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-#regex-add-form.hidden,
-body:not(.edit-mode) #regex-add-form {
+#regex-add-form.hidden {
   display: none;
 }
 

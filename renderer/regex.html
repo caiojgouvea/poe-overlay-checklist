@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Regex Shortcuts</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-theme="pink">
+  <div id="regex-panel">
+    <div id="regex-header">
+      <span id="regex-title">Regex</span>
+      <button id="regex-close-btn" title="Hide">✕</button>
+    </div>
+    <div id="regex-grid"></div>
+    <button id="add-regex-btn" title="New regex shortcut">+</button>
+    <div id="regex-add-form" class="hidden">
+      <input id="regex-label-input" type="text" placeholder="Name" maxlength="12">
+      <input id="regex-pattern-input" type="text" placeholder="Regex">
+      <button id="regex-confirm-btn">✓</button>
+    </div>
+  </div>
+
+  <script src="regex.js"></script>
+</body>
+</html>

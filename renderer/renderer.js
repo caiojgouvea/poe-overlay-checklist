@@ -2,10 +2,8 @@ let sections = []
 let draggedInfo = null
 
 const sectionsEl = document.getElementById('sections')
+const addSectionInput = document.getElementById('new-section-input')
 const addSectionBtn = document.getElementById('add-section-btn')
-const addSectionForm = document.getElementById('add-section-form')
-const newSectionInput = document.getElementById('new-section-input')
-const sectionConfirmBtn = document.getElementById('section-confirm-btn')
 const settingsBtn = document.getElementById('settings-btn')
 const closeBtn = document.getElementById('close-btn')
 const buildSelect = document.getElementById('build-select')
@@ -14,19 +12,9 @@ const buildAddForm = document.getElementById('build-add-form')
 const buildNameInput = document.getElementById('build-name-input')
 const buildConfirmBtn = document.getElementById('build-confirm-btn')
 const themeSelect = document.getElementById('theme-select')
-
-let regexes = []
-let editingRegexId = null
-
-const regexColEl = document.getElementById('regex-col')
-const colResizerEl = document.getElementById('col-resizer')
-const colToggleBtn = document.getElementById('col-toggle-btn')
-const regexGridEl = document.getElementById('regex-grid')
-const addRegexBtn = document.getElementById('add-regex-btn')
-const regexAddForm = document.getElementById('regex-add-form')
-const regexLabelInput = document.getElementById('regex-label-input')
-const regexPatternInput = document.getElementById('regex-pattern-input')
-const regexConfirmBtn = document.getElementById('regex-confirm-btn')
+const importUrlInput = document.getElementById('import-url-input')
+const importBuildBtn = document.getElementById('import-build-btn')
+const importStatus = document.getElementById('import-status')
 
 function uid() {
   return crypto.randomUUID()
@@ -144,6 +132,11 @@ function buildSectionEl(section) {
 
   for (const item of section.items) {
     list.appendChild(buildItemEl(section, item))
+    if (item.supports) {
+      for (const support of item.supports) {
+        list.appendChild(buildSupportEl(section, item, support))
+      }
+    }
   }
   wrap.appendChild(list)
 
@@ -219,7 +212,7 @@ function buildItemEl(section, item) {
   text.className = 'item-text'
   text.contentEditable = 'false'
   text.spellcheck = false
-  text.title = 'Clique: buscar no jogo e marcar | Duplo clique: editar'
+  text.title = 'Click: search in game and check | Double-click: edit'
   text.innerText = item.text
 
   let clickTimer = null
@@ -264,61 +257,82 @@ function buildItemEl(section, item) {
   return li
 }
 
-function renderRegexes() {
-  regexGridEl.innerHTML = ''
-  for (const item of regexes) {
-    regexGridEl.appendChild(buildRegexEl(item))
-  }
-}
+// Support gems linked to a main item (imported from a build). Rendered
+// indented, without a drag handle, and deleted from the parent's list.
+function buildSupportEl(section, mainItem, support) {
+  const li = document.createElement('li')
+  li.className = 'support-item'
+  li.dataset.itemId = support.id
+  if (support.done) li.classList.add('done')
 
-function buildRegexEl(item) {
-  const btn = document.createElement('button')
-  btn.className = 'regex-square'
-  btn.title = item.pattern
-  btn.innerText = item.label
+  const checkbox = document.createElement('input')
+  checkbox.type = 'checkbox'
+  checkbox.checked = support.done
+  checkbox.addEventListener('change', () => {
+    support.done = checkbox.checked
+    li.classList.toggle('done', support.done)
+    persist()
+  })
 
-  btn.addEventListener('click', () => {
-    if (document.body.classList.contains('edit-mode')) {
-      startEditRegex(item)
-      return
+  const text = document.createElement('span')
+  text.className = 'item-text'
+  text.contentEditable = 'false'
+  text.spellcheck = false
+  text.title = 'Click: search in game and check | Double-click: edit'
+  text.innerText = support.text
+
+  let clickTimer = null
+  text.addEventListener('click', () => {
+    if (text.isContentEditable) return
+    clearTimeout(clickTimer)
+    clickTimer = setTimeout(() => {
+      window.api.searchItem(support.id)
+    }, 220)
+  })
+  text.addEventListener('dblclick', () => {
+    clearTimeout(clickTimer)
+    text.contentEditable = 'true'
+    text.focus()
+  })
+  text.addEventListener('blur', () => {
+    if (!text.isContentEditable) return
+    support.text = text.innerText.trim() || support.text
+    text.contentEditable = 'false'
+    persist()
+  })
+  text.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      text.blur()
     }
-    window.api.searchRegex(item.pattern)
   })
 
-  const delBtn = document.createElement('span')
-  delBtn.className = 'regex-del-btn'
+  const delBtn = document.createElement('button')
+  delBtn.className = 'del-btn'
   delBtn.innerText = '✕'
-  delBtn.title = 'Remover'
-  delBtn.addEventListener('click', (e) => {
-    e.stopPropagation()
-    regexes = regexes.filter((r) => r.id !== item.id)
-    window.api.saveRegexes(regexes)
-    renderRegexes()
+  delBtn.addEventListener('click', () => {
+    mainItem.supports = mainItem.supports.filter((s) => s.id !== support.id)
+    persist()
+    render()
   })
 
-  const wrap = document.createElement('div')
-  wrap.className = 'regex-square-wrap'
-  wrap.appendChild(btn)
-  wrap.appendChild(delBtn)
-  return wrap
+  li.appendChild(checkbox)
+  li.appendChild(text)
+  li.appendChild(delBtn)
+  return li
 }
 
 function addSection() {
-  const value = newSectionInput.value.trim()
+  const value = addSectionInput.value.trim()
   if (!value) return
   sections.push({ id: uid(), title: value, collapsed: false, items: [] })
-  newSectionInput.value = ''
-  addSectionForm.classList.add('hidden')
+  addSectionInput.value = ''
   persist()
   render()
 }
 
-addSectionBtn.addEventListener('click', () => {
-  addSectionForm.classList.toggle('hidden')
-  if (!addSectionForm.classList.contains('hidden')) newSectionInput.focus()
-})
-sectionConfirmBtn.addEventListener('click', addSection)
-newSectionInput.addEventListener('keydown', (e) => {
+addSectionBtn.addEventListener('click', addSection)
+addSectionInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') addSection()
 })
 
@@ -374,6 +388,26 @@ buildNameInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') addBuild()
 })
 
+importBuildBtn.addEventListener('click', async () => {
+  const url = importUrlInput.value.trim()
+  if (!url) return
+  importStatus.textContent = 'Importing...'
+  importStatus.classList.remove('error')
+  importBuildBtn.disabled = true
+  const result = await window.api.importBuild(url)
+  importBuildBtn.disabled = false
+  if (result.ok) {
+    importStatus.textContent = `Added ${result.addedSections} section(s)`
+    importUrlInput.value = ''
+  } else {
+    importStatus.textContent = result.error || 'Import failed'
+    importStatus.classList.add('error')
+  }
+})
+importUrlInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') importBuildBtn.click()
+})
+
 window.api.onBuildsUpdated(({ builds, activeBuildId, sections: updated }) => {
   renderBuildSelect({ builds, activeBuildId })
   sections = updated
@@ -382,56 +416,6 @@ window.api.onBuildsUpdated(({ builds, activeBuildId, sections: updated }) => {
 
 window.api.loadBuilds().then((state) => {
   renderBuildSelect(state)
-})
-
-addRegexBtn.addEventListener('click', () => {
-  editingRegexId = null
-  regexLabelInput.value = ''
-  regexPatternInput.value = ''
-  regexAddForm.classList.toggle('hidden')
-  if (!regexAddForm.classList.contains('hidden')) regexLabelInput.focus()
-})
-
-function startEditRegex(item) {
-  editingRegexId = item.id
-  regexLabelInput.value = item.label
-  regexPatternInput.value = item.pattern
-  regexAddForm.classList.remove('hidden')
-  regexLabelInput.focus()
-}
-
-function confirmAddRegex() {
-  const label = regexLabelInput.value.trim()
-  const pattern = regexPatternInput.value.trim()
-  if (!label || !pattern) return
-  if (editingRegexId) {
-    const existing = regexes.find((r) => r.id === editingRegexId)
-    if (existing) {
-      existing.label = label
-      existing.pattern = pattern
-    }
-    editingRegexId = null
-  } else {
-    regexes.push({ id: uid(), label, pattern })
-  }
-  window.api.saveRegexes(regexes)
-  renderRegexes()
-  regexLabelInput.value = ''
-  regexPatternInput.value = ''
-  regexAddForm.classList.add('hidden')
-}
-
-regexConfirmBtn.addEventListener('click', confirmAddRegex)
-regexPatternInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') confirmAddRegex()
-})
-regexLabelInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') regexPatternInput.focus()
-})
-
-window.api.loadRegexes().then((loaded) => {
-  regexes = loaded
-  renderRegexes()
 })
 
 window.api.loadItems().then((loaded) => {
@@ -447,64 +431,4 @@ themeSelect.value = savedTheme
 themeSelect.addEventListener('change', () => {
   document.body.dataset.theme = themeSelect.value
   localStorage.setItem(THEME_KEY, themeSelect.value)
-})
-
-const REGEX_COL_WIDTH_KEY = 'regexColWidth'
-const REGEX_COL_MIN = 50
-const REGEX_COL_MAX = 220
-
-const savedRegexColWidth = parseInt(localStorage.getItem(REGEX_COL_WIDTH_KEY), 10)
-if (savedRegexColWidth) {
-  regexColEl.style.width = Math.min(REGEX_COL_MAX, Math.max(REGEX_COL_MIN, savedRegexColWidth)) + 'px'
-}
-
-const REGEX_COL_COLLAPSED_KEY = 'regexColCollapsed'
-let lastExpandedColWidth = null
-
-function setRegexColCollapsed(collapsed) {
-  document.body.classList.toggle('regex-col-collapsed', collapsed)
-  colToggleBtn.innerText = 'REGEX'
-  localStorage.setItem(REGEX_COL_COLLAPSED_KEY, collapsed ? '1' : '0')
-}
-
-setRegexColCollapsed(localStorage.getItem(REGEX_COL_COLLAPSED_KEY) === '1')
-
-colToggleBtn.addEventListener('mousedown', (e) => {
-  e.stopPropagation()
-})
-colToggleBtn.addEventListener('click', () => {
-  const collapsing = !document.body.classList.contains('regex-col-collapsed')
-  if (collapsing) {
-    lastExpandedColWidth = Math.round(
-      regexColEl.getBoundingClientRect().width + colResizerEl.getBoundingClientRect().width
-    )
-    setRegexColCollapsed(true)
-    window.api.resizeWindowBy(-lastExpandedColWidth)
-  } else {
-    setRegexColCollapsed(false)
-    window.api.resizeWindowBy(lastExpandedColWidth || 66)
-  }
-})
-
-colResizerEl.addEventListener('mousedown', (e) => {
-  if (e.target === colToggleBtn) return
-  if (document.body.classList.contains('regex-col-collapsed')) return
-  e.preventDefault()
-  colResizerEl.classList.add('dragging')
-  const startX = e.clientX
-  const startWidth = regexColEl.getBoundingClientRect().width
-
-  const onMouseMove = (moveEvent) => {
-    const delta = startX - moveEvent.clientX
-    const newWidth = Math.min(REGEX_COL_MAX, Math.max(REGEX_COL_MIN, startWidth + delta))
-    regexColEl.style.width = newWidth + 'px'
-  }
-  const onMouseUp = () => {
-    colResizerEl.classList.remove('dragging')
-    localStorage.setItem(REGEX_COL_WIDTH_KEY, Math.round(regexColEl.getBoundingClientRect().width))
-    document.removeEventListener('mousemove', onMouseMove)
-    document.removeEventListener('mouseup', onMouseUp)
-  }
-  document.addEventListener('mousemove', onMouseMove)
-  document.addEventListener('mouseup', onMouseUp)
 })

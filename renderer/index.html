@@ -36,32 +36,23 @@
             <option value="blue">Blue</option>
           </select>
         </div>
+        <div id="import-row">
+          <label for="import-url-input">Import</label>
+          <input id="import-url-input" type="text" placeholder="pobb.in/... or pastebin.com/...">
+          <button id="import-build-btn" title="Import leveling sections from a build link">Go</button>
+        </div>
+        <div id="import-status"></div>
+
+        <div id="add-section-row">
+          <label for="new-section-input">Section</label>
+          <input id="new-section-input" type="text" placeholder="Section name">
+          <button id="add-section-btn">+</button>
+        </div>
       </div>
 
       <div id="sections"></div>
 
-      <button id="add-section-btn" title="New section">+ Section</button>
-      <div id="add-section-form" class="hidden">
-        <input id="new-section-input" type="text" placeholder="Section name">
-        <button id="section-confirm-btn">✓</button>
-      </div>
-
       <div id="hint">Ctrl+Shift+L to show/hide</div>
-    </div>
-
-    <div id="col-resizer" title="Drag to resize">
-      <button id="col-toggle-btn" title="Show/hide regex column">◀</button>
-    </div>
-
-    <div id="regex-col">
-      <div id="regex-title">Regex</div>
-      <div id="regex-grid"></div>
-      <button id="add-regex-btn" title="New regex shortcut">+</button>
-      <div id="regex-add-form" class="hidden">
-        <input id="regex-label-input" type="text" placeholder="Name" maxlength="12">
-        <input id="regex-pattern-input" type="text" placeholder="Regex">
-        <button id="regex-confirm-btn">✓</button>
-      </div>
     </div>
   </div>
 
