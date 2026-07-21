@@ -29,10 +29,18 @@ function renderRegexes() {
 function buildRegexEl(item) {
   const btn = document.createElement('button')
   btn.className = 'regex-square'
-  btn.title = item.pattern
+  btn.title = `${item.pattern}\nClick: search in game | Double-click: edit`
   btn.innerText = item.label
 
+  let clickTimer = null
   btn.addEventListener('click', () => {
+    clearTimeout(clickTimer)
+    clickTimer = setTimeout(() => {
+      window.api.searchRegex(item.pattern)
+    }, 220)
+  })
+  btn.addEventListener('dblclick', () => {
+    clearTimeout(clickTimer)
     startEditRegex(item)
   })
 
