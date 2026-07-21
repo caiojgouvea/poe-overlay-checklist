@@ -29,18 +29,18 @@ function renderRegexes() {
 function buildRegexEl(item) {
   const btn = document.createElement('button')
   btn.className = 'regex-square'
-  btn.title = `${item.pattern}\nClick: search in game | Double-click: edit`
+  btn.title = `${item.pattern}\nClick to search in game`
   btn.innerText = item.label
-
-  let clickTimer = null
   btn.addEventListener('click', () => {
-    clearTimeout(clickTimer)
-    clickTimer = setTimeout(() => {
-      window.api.searchRegex(item.pattern)
-    }, 220)
+    window.api.searchRegex(item.pattern)
   })
-  btn.addEventListener('dblclick', () => {
-    clearTimeout(clickTimer)
+
+  const editBtn = document.createElement('span')
+  editBtn.className = 'regex-edit-btn'
+  editBtn.innerText = '✎'
+  editBtn.title = 'Edit'
+  editBtn.addEventListener('click', (e) => {
+    e.stopPropagation()
     startEditRegex(item)
   })
 
@@ -58,6 +58,7 @@ function buildRegexEl(item) {
   const wrap = document.createElement('div')
   wrap.className = 'regex-square-wrap'
   wrap.appendChild(btn)
+  wrap.appendChild(editBtn)
   wrap.appendChild(delBtn)
   return wrap
 }
@@ -67,7 +68,10 @@ addRegexBtn.addEventListener('click', () => {
   regexLabelInput.value = ''
   regexPatternInput.value = ''
   regexAddForm.classList.toggle('hidden')
-  if (!regexAddForm.classList.contains('hidden')) regexLabelInput.focus()
+  if (!regexAddForm.classList.contains('hidden')) {
+    regexAddForm.scrollIntoView({ block: 'nearest' })
+    regexLabelInput.focus()
+  }
 })
 
 function startEditRegex(item) {
@@ -75,6 +79,7 @@ function startEditRegex(item) {
   regexLabelInput.value = item.label
   regexPatternInput.value = item.pattern
   regexAddForm.classList.remove('hidden')
+  regexAddForm.scrollIntoView({ block: 'nearest' })
   regexLabelInput.focus()
 }
 

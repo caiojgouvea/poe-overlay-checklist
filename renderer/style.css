@@ -782,10 +782,10 @@ body.edit-mode .section-add-row {
   border-color: var(--accent);
 }
 
-.regex-del-btn {
+.regex-del-btn,
+.regex-edit-btn {
   position: absolute;
   top: -5px;
-  right: -5px;
   width: 13px;
   height: 13px;
   line-height: 12px;
@@ -800,7 +800,16 @@ body.edit-mode .section-add-row {
   -webkit-app-region: no-drag;
 }
 
-.regex-square-wrap:hover .regex-del-btn {
+.regex-del-btn {
+  right: -5px;
+}
+
+.regex-edit-btn {
+  left: -5px;
+}
+
+.regex-square-wrap:hover .regex-del-btn,
+.regex-square-wrap:hover .regex-edit-btn {
   display: block;
 }
 
