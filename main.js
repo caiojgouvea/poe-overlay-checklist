@@ -1,4 +1,4 @@
-const { app, BrowserWindow, globalShortcut, ipcMain, screen, clipboard } = require('electron')
+const { app, BrowserWindow, globalShortcut, ipcMain, screen, clipboard, Tray, Menu, nativeImage } = require('electron')
 const path = require('path')
 const fs = require('fs')
 const https = require('https')
@@ -13,10 +13,14 @@ const REGEX_FILE = path.join(app.getPath('userData'), 'regex-shortcuts.json')
 const HOTKEY = 'Control+Shift+L'
 const CLIPBOARD_POLL_MS = 500
 const GAME_WINDOW_TITLE = 'Path of Exile'
+const APP_NAME = 'PoE Progression Companion'
+const ICON_PATH = path.join(__dirname, 'assets', 'icon.png')
 
 let mainWindow
 let regexWindow
 let toggleWindow
+let tray
+let isQuitting = false
 let lastClipboardText = ''
 
 function loadWindowState() {
@@ -563,6 +567,7 @@ function createWindow() {
     alwaysOnTop: true,
     resizable: true,
     skipTaskbar: true,
+    icon: ICON_PATH,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -603,6 +608,22 @@ function toggleVisibility() {
   } else {
     showAllWindows()
   }
+}
+
+// The overlay hides its windows (no taskbar entry) instead of closing them,
+// so a tray icon is the only way to bring it back or quit for real.
+function createTray() {
+  const icon = nativeImage.createFromPath(ICON_PATH)
+  tray = new Tray(icon.resize({ width: 16, height: 16 }))
+  tray.setToolTip(APP_NAME)
+  tray.setContextMenu(
+    Menu.buildFromTemplate([
+      { label: 'Show/Hide (Ctrl+Shift+L)', click: () => toggleVisibility() },
+      { type: 'separator' },
+      { label: 'Quit', click: () => app.quit() }
+    ])
+  )
+  tray.on('click', () => toggleVisibility())
 }
 
 // Small standalone window holding just the REGEX toggle button, kept
@@ -675,6 +696,7 @@ function createRegexWindow() {
   regexWindow.on('moved', saveRegexWindowState)
   regexWindow.on('resized', saveRegexWindowState)
   regexWindow.on('close', (event) => {
+    if (isQuitting) return
     event.preventDefault()
     regexWindow.hide()
     saveRegexWindowState()
@@ -694,6 +716,7 @@ function toggleRegexWindow() {
 app.whenReady().then(() => {
   createWindow()
   createToggleWindow()
+  createTray()
 
   const savedRegexState = loadRegexWindowState()
   if (savedRegexState && savedRegexState.visible) {
@@ -732,6 +755,10 @@ app.whenReady().then(() => {
   })
 
   setInterval(tryAutoCheckFromClipboard, CLIPBOARD_POLL_MS)
+})
+
+app.on('before-quit', () => {
+  isQuitting = true
 })
 
 app.on('will-quit', () => {

@@ -1,12 +1,12 @@
 {
-  "name": "poe-league-checklist",
+  "name": "poe-progression-companion",
   "version": "1.0.0",
-  "description": "Overlay de checklist para começo de liga no Path of Exile",
+  "description": "PoE Progression Companion - overlay checklist to guide your leveling and build progression in Path of Exile",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder",
-    "package": "electron-packager . \"PoE League Checklist\" --platform=win32 --arch=x64 --out=dist-packaged --overwrite --ignore=\"^/dist($|/)\" --ignore=\"^/dist-packaged($|/)\""
+    "package": "electron-packager . \"PoE Progression Companion\" --platform=win32 --arch=x64 --out=dist-packaged --overwrite --ignore=\"^/dist($|/)\" --ignore=\"^/dist-packaged($|/)\""
   },
   "devDependencies": {
     "electron": "^31.0.0",
@@ -14,13 +14,14 @@
     "electron-packager": "^17.1.2"
   },
   "build": {
-    "appId": "com.caiojgouvea.poe-league-checklist",
-    "productName": "PoE League Checklist",
+    "appId": "com.caiojgouvea.poe-progression-companion",
+    "productName": "PoE Progression Companion",
     "files": [
       "main.js",
       "preload.js",
       "renderer/**/*",
-      "data/**/*"
+      "data/**/*",
+      "assets/**/*"
     ],
     "win": {
       "target": "portable"
