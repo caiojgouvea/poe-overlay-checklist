@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>PoE League Checklist</title>
@@ -11,8 +11,8 @@
       <div id="header">
         <span id="title">🗡️ League Checklist</span>
         <div id="header-actions">
-          <button id="settings-btn" title="Editar (adicionar/remover/reordenar)">⚙</button>
-          <button id="close-btn" title="Esconder (Ctrl+Shift+L)">✕</button>
+          <button id="settings-btn" title="Edit (add/remove/reorder)">⚙</button>
+          <button id="close-btn" title="Hide (Ctrl+Shift+L)">✕</button>
         </div>
       </div>
 
@@ -21,6 +21,10 @@
           <label for="build-select">Build</label>
           <select id="build-select"></select>
           <button id="add-build-btn" title="New build">+</button>
+        </div>
+        <div id="build-add-form" class="hidden">
+          <input id="build-name-input" type="text" placeholder="Build name">
+          <button id="build-confirm-btn">✓</button>
         </div>
         <div id="theme-row">
           <label for="theme-select">Theme</label>
@@ -36,12 +40,13 @@
 
       <div id="sections"></div>
 
-      <div id="add-section-row">
-        <input id="new-section-input" type="text" placeholder="Nova sessão...">
-        <button id="add-section-btn">+</button>
+      <button id="add-section-btn" title="New section">+ Section</button>
+      <div id="add-section-form" class="hidden">
+        <input id="new-section-input" type="text" placeholder="Section name">
+        <button id="section-confirm-btn">✓</button>
       </div>
 
-      <div id="hint">Ctrl+Shift+L para mostrar/esconder</div>
+      <div id="hint">Ctrl+Shift+L to show/hide</div>
     </div>
 
     <div id="col-resizer" title="Drag to resize">
@@ -51,9 +56,9 @@
     <div id="regex-col">
       <div id="regex-title">Regex</div>
       <div id="regex-grid"></div>
-      <button id="add-regex-btn" title="Novo atalho de regex">+</button>
+      <button id="add-regex-btn" title="New regex shortcut">+</button>
       <div id="regex-add-form" class="hidden">
-        <input id="regex-label-input" type="text" placeholder="Nome" maxlength="12">
+        <input id="regex-label-input" type="text" placeholder="Name" maxlength="12">
         <input id="regex-pattern-input" type="text" placeholder="Regex">
         <button id="regex-confirm-btn">✓</button>
       </div>

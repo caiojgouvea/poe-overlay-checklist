@@ -308,7 +308,9 @@ body.edit-mode #settings-panel {
   background: var(--btn-bg);
   border: none;
   border-radius: 4px;
-  width: 20px;
+  width: 26px;
+  height: 26px;
+  font-size: 15px;
   color: var(--btn-fg);
   font-weight: bold;
   cursor: pointer;
@@ -317,6 +319,42 @@ body.edit-mode #settings-panel {
 }
 
 #add-build-btn:hover {
+  background: var(--btn-bg-hover);
+}
+
+#build-add-form {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+#build-add-form.hidden {
+  display: none;
+}
+
+#build-add-form input {
+  flex: 1;
+  background: var(--field-bg);
+  border: 1px solid var(--accent-border);
+  border-radius: 4px;
+  padding: 4px 6px;
+  color: var(--text-primary);
+  font-size: 11px;
+  -webkit-app-region: no-drag;
+}
+
+#build-confirm-btn {
+  background: var(--btn-bg);
+  border: none;
+  border-radius: 4px;
+  width: 22px;
+  color: var(--btn-fg);
+  font-weight: bold;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+
+#build-confirm-btn:hover {
   background: var(--btn-bg-hover);
 }
 
@@ -519,18 +557,40 @@ body.edit-mode .section-add-row {
   background: var(--btn-bg-hover);
 }
 
-#add-section-row {
+#add-section-btn {
   display: none;
-  gap: 6px;
-  padding-top: 8px;
-  border-top: 1px solid var(--accent-border);
+  width: 100%;
+  margin-top: 8px;
+  padding: 6px 0;
+  background: var(--btn-bg);
+  border: none;
+  border-radius: 4px;
+  color: var(--btn-fg);
+  font-weight: bold;
+  font-size: 11px;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
 }
 
-body.edit-mode #add-section-row {
+body.edit-mode #add-section-btn {
+  display: block;
+}
+
+#add-section-btn:hover {
+  background: var(--btn-bg-hover);
+}
+
+#add-section-form {
   display: flex;
+  gap: 6px;
+  margin-top: 6px;
 }
 
-#new-section-input {
+#add-section-form.hidden {
+  display: none;
+}
+
+#add-section-form input {
   flex: 1;
   background: var(--field-bg);
   border: 1px solid var(--accent-border);
@@ -541,7 +601,7 @@ body.edit-mode #add-section-row {
   -webkit-app-region: no-drag;
 }
 
-#add-section-btn {
+#section-confirm-btn {
   background: var(--btn-bg);
   border: none;
   border-radius: 4px;
@@ -552,7 +612,7 @@ body.edit-mode #add-section-row {
   -webkit-app-region: no-drag;
 }
 
-#add-section-btn:hover {
+#section-confirm-btn:hover {
   background: var(--btn-bg-hover);
 }
 

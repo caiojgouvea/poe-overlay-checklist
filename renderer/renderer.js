@@ -2,12 +2,17 @@ let sections = []
 let draggedInfo = null
 
 const sectionsEl = document.getElementById('sections')
-const newSectionInput = document.getElementById('new-section-input')
 const addSectionBtn = document.getElementById('add-section-btn')
+const addSectionForm = document.getElementById('add-section-form')
+const newSectionInput = document.getElementById('new-section-input')
+const sectionConfirmBtn = document.getElementById('section-confirm-btn')
 const settingsBtn = document.getElementById('settings-btn')
 const closeBtn = document.getElementById('close-btn')
 const buildSelect = document.getElementById('build-select')
 const addBuildBtn = document.getElementById('add-build-btn')
+const buildAddForm = document.getElementById('build-add-form')
+const buildNameInput = document.getElementById('build-name-input')
+const buildConfirmBtn = document.getElementById('build-confirm-btn')
 const themeSelect = document.getElementById('theme-select')
 
 let regexes = []
@@ -148,7 +153,7 @@ function buildSectionEl(section) {
 
   const addInput = document.createElement('input')
   addInput.type = 'text'
-  addInput.placeholder = 'Novo passo...'
+  addInput.placeholder = 'New step...'
   addInput.className = 'section-add-input'
 
   const addBtn = document.createElement('button')
@@ -303,11 +308,16 @@ function addSection() {
   if (!value) return
   sections.push({ id: uid(), title: value, collapsed: false, items: [] })
   newSectionInput.value = ''
+  addSectionForm.classList.add('hidden')
   persist()
   render()
 }
 
-addSectionBtn.addEventListener('click', addSection)
+addSectionBtn.addEventListener('click', () => {
+  addSectionForm.classList.toggle('hidden')
+  if (!addSectionForm.classList.contains('hidden')) newSectionInput.focus()
+})
+sectionConfirmBtn.addEventListener('click', addSection)
 newSectionInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') addSection()
 })
@@ -347,9 +357,21 @@ buildSelect.addEventListener('change', () => {
   window.api.switchBuild(buildSelect.value)
 })
 
+function addBuild() {
+  const name = buildNameInput.value.trim()
+  if (!name) return
+  window.api.createBuild(name)
+  buildNameInput.value = ''
+  buildAddForm.classList.add('hidden')
+}
+
 addBuildBtn.addEventListener('click', () => {
-  const name = window.prompt('Nome da nova build:')
-  if (name && name.trim()) window.api.createBuild(name.trim())
+  buildAddForm.classList.toggle('hidden')
+  if (!buildAddForm.classList.contains('hidden')) buildNameInput.focus()
+})
+buildConfirmBtn.addEventListener('click', addBuild)
+buildNameInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') addBuild()
 })
 
 window.api.onBuildsUpdated(({ builds, activeBuildId, sections: updated }) => {
