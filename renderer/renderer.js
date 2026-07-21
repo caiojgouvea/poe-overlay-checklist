@@ -487,12 +487,17 @@ function keyEventToAccelerator(e) {
   if (e.altKey) parts.push('Alt')
   if (e.shiftKey) parts.push('Shift')
   if (e.metaKey) parts.push('Super')
-  if (parts.length === 0) return null
 
   const arrowKeys = { ArrowUp: 'Up', ArrowDown: 'Down', ArrowLeft: 'Left', ArrowRight: 'Right' }
+  const isFunctionKey = /^F([1-9]|1[0-9]|2[0-4])$/.test(e.key)
+
+  // Letters/digits/space/arrows need a modifier so we don't hijack normal
+  // typing; function keys are safe to use on their own.
+  if (parts.length === 0 && !isFunctionKey) return null
+
   let mainKey = null
   if (/^[a-zA-Z0-9]$/.test(e.key)) mainKey = e.key.toUpperCase()
-  else if (/^F([1-9]|1[0-9]|2[0-4])$/.test(e.key)) mainKey = e.key
+  else if (isFunctionKey) mainKey = e.key
   else if (e.key === ' ') mainKey = 'Space'
   else if (arrowKeys[e.key]) mainKey = arrowKeys[e.key]
   if (!mainKey) return null
