@@ -528,7 +528,8 @@ body.edit-mode .section-del-btn {
   100% { background: transparent; }
 }
 
-.section-items li .del-btn {
+.section-items li .del-btn,
+.section-items li .nest-btn {
   display: none;
   background: var(--btn-bg);
   border: none;
@@ -542,13 +543,20 @@ body.edit-mode .section-del-btn {
   -webkit-app-region: no-drag;
 }
 
-body.edit-mode .section-items li .del-btn {
+body.edit-mode .section-items li .del-btn,
+body.edit-mode .section-items li .nest-btn {
   display: inline-block;
 }
 
-.section-items li .del-btn:hover {
+.section-items li .del-btn:hover,
+.section-items li .nest-btn:hover {
   background: var(--btn-bg-hover);
   color: var(--accent-strong);
+}
+
+.section-items li .nest-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
 }
 
 #new-section-input {

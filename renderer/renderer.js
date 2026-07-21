@@ -241,6 +241,23 @@ function buildItemEl(section, item) {
     }
   })
 
+  const nestBtn = document.createElement('button')
+  nestBtn.className = 'nest-btn'
+  nestBtn.innerText = '⤷'
+  nestBtn.title = 'Turn into a sub-item of the item above'
+  const itemIndex = section.items.findIndex((i) => i.id === item.id)
+  if (itemIndex <= 0) nestBtn.disabled = true
+  nestBtn.addEventListener('click', () => {
+    const idx = section.items.findIndex((i) => i.id === item.id)
+    if (idx <= 0) return
+    const parent = section.items[idx - 1]
+    section.items.splice(idx, 1)
+    parent.supports = parent.supports || []
+    parent.supports.push({ id: item.id, text: item.text, done: item.done })
+    persist()
+    render()
+  })
+
   const delBtn = document.createElement('button')
   delBtn.className = 'del-btn'
   delBtn.innerText = '✕'
@@ -253,6 +270,7 @@ function buildItemEl(section, item) {
   li.appendChild(handle)
   li.appendChild(checkbox)
   li.appendChild(text)
+  li.appendChild(nestBtn)
   li.appendChild(delBtn)
   return li
 }
@@ -307,6 +325,18 @@ function buildSupportEl(section, mainItem, support) {
     }
   })
 
+  const promoteBtn = document.createElement('button')
+  promoteBtn.className = 'nest-btn'
+  promoteBtn.innerText = '⤴'
+  promoteBtn.title = 'Turn back into its own item'
+  promoteBtn.addEventListener('click', () => {
+    mainItem.supports = mainItem.supports.filter((s) => s.id !== support.id)
+    const mainIndex = section.items.findIndex((i) => i.id === mainItem.id)
+    section.items.splice(mainIndex + 1, 0, { id: support.id, text: support.text, done: support.done })
+    persist()
+    render()
+  })
+
   const delBtn = document.createElement('button')
   delBtn.className = 'del-btn'
   delBtn.innerText = '✕'
@@ -318,6 +348,7 @@ function buildSupportEl(section, mainItem, support) {
 
   li.appendChild(checkbox)
   li.appendChild(text)
+  li.appendChild(promoteBtn)
   li.appendChild(delBtn)
   return li
 }

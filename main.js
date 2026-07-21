@@ -584,16 +584,24 @@ function createWindow() {
   })
 }
 
+function hideAllWindows() {
+  mainWindow.hide()
+  if (toggleWindow) toggleWindow.hide()
+  if (regexWindow) regexWindow.hide()
+}
+
+function showAllWindows() {
+  mainWindow.show()
+  if (toggleWindow) toggleWindow.show()
+  const savedRegexState = loadRegexWindowState()
+  if (regexWindow && savedRegexState && savedRegexState.visible) regexWindow.show()
+}
+
 function toggleVisibility() {
   if (mainWindow.isVisible()) {
-    mainWindow.hide()
-    if (toggleWindow) toggleWindow.hide()
-    if (regexWindow) regexWindow.hide()
+    hideAllWindows()
   } else {
-    mainWindow.show()
-    if (toggleWindow) toggleWindow.show()
-    const savedRegexState = loadRegexWindowState()
-    if (regexWindow && savedRegexState && savedRegexState.visible) regexWindow.show()
+    showAllWindows()
   }
 }
 
@@ -701,7 +709,7 @@ app.whenReady().then(() => {
   ipcMain.handle('load-items', () => loadItems())
   ipcMain.on('save-items', (_event, items) => saveItems(items))
   ipcMain.on('search-item', (_event, itemId) => searchAndCheckItem(itemId))
-  ipcMain.on('hide-window', () => mainWindow && mainWindow.hide())
+  ipcMain.on('hide-window', () => mainWindow && hideAllWindows())
   ipcMain.on('toggle-regex-window', () => toggleRegexWindow())
   ipcMain.on('hide-regex-window', () => {
     if (!regexWindow) return
