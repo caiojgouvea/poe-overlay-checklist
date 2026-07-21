@@ -9,17 +9,25 @@
   <div id="panel">
     <div id="header">
       <span id="title">🗡️ League Checklist</span>
-      <span id="lock-indicator">🔒</span>
+      <div id="header-actions">
+        <button id="settings-btn" title="Configurações">⚙</button>
+        <button id="close-btn" title="Esconder (Ctrl+Shift+L)">✕</button>
+      </div>
     </div>
 
-    <ul id="list"></ul>
-
-    <div id="add-row">
-      <input id="new-item-input" type="text" placeholder="Novo passo...">
-      <button id="add-btn">+</button>
+    <div id="settings-panel" class="hidden">
+      <label for="character-name-input">Personagem</label>
+      <input id="character-name-input" type="text" placeholder="Nome do boneco...">
     </div>
 
-    <div id="hint">Ctrl+Shift+L para destravar/travar</div>
+    <div id="sections"></div>
+
+    <div id="add-section-row">
+      <input id="new-section-input" type="text" placeholder="Nova sessão...">
+      <button id="add-section-btn">+</button>
+    </div>
+
+    <div id="hint">Ctrl+Shift+L para mostrar/esconder</div>
   </div>
 
   <script src="renderer.js"></script>
