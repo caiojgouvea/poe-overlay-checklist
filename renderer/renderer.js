@@ -8,9 +8,14 @@ const settingsBtn = document.getElementById('settings-btn')
 const closeBtn = document.getElementById('close-btn')
 const buildSelect = document.getElementById('build-select')
 const addBuildBtn = document.getElementById('add-build-btn')
+const themeSelect = document.getElementById('theme-select')
 
 let regexes = []
+let editingRegexId = null
 
+const regexColEl = document.getElementById('regex-col')
+const colResizerEl = document.getElementById('col-resizer')
+const colToggleBtn = document.getElementById('col-toggle-btn')
 const regexGridEl = document.getElementById('regex-grid')
 const addRegexBtn = document.getElementById('add-regex-btn')
 const regexAddForm = document.getElementById('regex-add-form')
@@ -268,6 +273,10 @@ function buildRegexEl(item) {
   btn.innerText = item.label
 
   btn.addEventListener('click', () => {
+    if (document.body.classList.contains('edit-mode')) {
+      startEditRegex(item)
+      return
+    }
     window.api.searchRegex(item.pattern)
   })
 
@@ -354,15 +363,35 @@ window.api.loadBuilds().then((state) => {
 })
 
 addRegexBtn.addEventListener('click', () => {
+  editingRegexId = null
+  regexLabelInput.value = ''
+  regexPatternInput.value = ''
   regexAddForm.classList.toggle('hidden')
   if (!regexAddForm.classList.contains('hidden')) regexLabelInput.focus()
 })
+
+function startEditRegex(item) {
+  editingRegexId = item.id
+  regexLabelInput.value = item.label
+  regexPatternInput.value = item.pattern
+  regexAddForm.classList.remove('hidden')
+  regexLabelInput.focus()
+}
 
 function confirmAddRegex() {
   const label = regexLabelInput.value.trim()
   const pattern = regexPatternInput.value.trim()
   if (!label || !pattern) return
-  regexes.push({ id: uid(), label, pattern })
+  if (editingRegexId) {
+    const existing = regexes.find((r) => r.id === editingRegexId)
+    if (existing) {
+      existing.label = label
+      existing.pattern = pattern
+    }
+    editingRegexId = null
+  } else {
+    regexes.push({ id: uid(), label, pattern })
+  }
   window.api.saveRegexes(regexes)
   renderRegexes()
   regexLabelInput.value = ''
@@ -386,4 +415,74 @@ window.api.loadRegexes().then((loaded) => {
 window.api.loadItems().then((loaded) => {
   sections = loaded
   render()
+})
+
+const THEME_KEY = 'theme'
+const savedTheme = localStorage.getItem(THEME_KEY) || 'pink'
+document.body.dataset.theme = savedTheme
+themeSelect.value = savedTheme
+
+themeSelect.addEventListener('change', () => {
+  document.body.dataset.theme = themeSelect.value
+  localStorage.setItem(THEME_KEY, themeSelect.value)
+})
+
+const REGEX_COL_WIDTH_KEY = 'regexColWidth'
+const REGEX_COL_MIN = 50
+const REGEX_COL_MAX = 220
+
+const savedRegexColWidth = parseInt(localStorage.getItem(REGEX_COL_WIDTH_KEY), 10)
+if (savedRegexColWidth) {
+  regexColEl.style.width = Math.min(REGEX_COL_MAX, Math.max(REGEX_COL_MIN, savedRegexColWidth)) + 'px'
+}
+
+const REGEX_COL_COLLAPSED_KEY = 'regexColCollapsed'
+let lastExpandedColWidth = null
+
+function setRegexColCollapsed(collapsed) {
+  document.body.classList.toggle('regex-col-collapsed', collapsed)
+  colToggleBtn.innerText = 'REGEX'
+  localStorage.setItem(REGEX_COL_COLLAPSED_KEY, collapsed ? '1' : '0')
+}
+
+setRegexColCollapsed(localStorage.getItem(REGEX_COL_COLLAPSED_KEY) === '1')
+
+colToggleBtn.addEventListener('mousedown', (e) => {
+  e.stopPropagation()
+})
+colToggleBtn.addEventListener('click', () => {
+  const collapsing = !document.body.classList.contains('regex-col-collapsed')
+  if (collapsing) {
+    lastExpandedColWidth = Math.round(
+      regexColEl.getBoundingClientRect().width + colResizerEl.getBoundingClientRect().width
+    )
+    setRegexColCollapsed(true)
+    window.api.resizeWindowBy(-lastExpandedColWidth)
+  } else {
+    setRegexColCollapsed(false)
+    window.api.resizeWindowBy(lastExpandedColWidth || 66)
+  }
+})
+
+colResizerEl.addEventListener('mousedown', (e) => {
+  if (e.target === colToggleBtn) return
+  if (document.body.classList.contains('regex-col-collapsed')) return
+  e.preventDefault()
+  colResizerEl.classList.add('dragging')
+  const startX = e.clientX
+  const startWidth = regexColEl.getBoundingClientRect().width
+
+  const onMouseMove = (moveEvent) => {
+    const delta = startX - moveEvent.clientX
+    const newWidth = Math.min(REGEX_COL_MAX, Math.max(REGEX_COL_MIN, startWidth + delta))
+    regexColEl.style.width = newWidth + 'px'
+  }
+  const onMouseUp = () => {
+    colResizerEl.classList.remove('dragging')
+    localStorage.setItem(REGEX_COL_WIDTH_KEY, Math.round(regexColEl.getBoundingClientRect().width))
+    document.removeEventListener('mousemove', onMouseMove)
+    document.removeEventListener('mouseup', onMouseUp)
+  }
+  document.addEventListener('mousemove', onMouseMove)
+  document.addEventListener('mouseup', onMouseUp)
 })

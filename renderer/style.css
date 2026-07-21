@@ -1,4 +1,5 @@
-:root {
+:root,
+body[data-theme="pink"] {
   --accent: #ff4fa8;
   --accent-strong: #ff2d95;
   --accent-bg: rgba(255, 79, 168, 0.14);
@@ -8,6 +9,69 @@
   --text-muted: rgba(255, 230, 244, 0.6);
   --panel-bg: rgba(24, 8, 18, 0.55);
   --field-bg: rgba(255, 255, 255, 0.07);
+  --btn-bg: #ffffff;
+  --btn-bg-hover: #ffd6ec;
+  --btn-fg: #1a0512;
+}
+
+body[data-theme="white"] {
+  --accent: #d6336c;
+  --accent-strong: #b8255a;
+  --accent-bg: rgba(214, 51, 108, 0.1);
+  --accent-bg-hover: rgba(214, 51, 108, 0.2);
+  --accent-border: rgba(214, 51, 108, 0.35);
+  --text-primary: #1a1a1a;
+  --text-muted: rgba(0, 0, 0, 0.55);
+  --panel-bg: rgba(255, 255, 255, 0.85);
+  --field-bg: rgba(0, 0, 0, 0.05);
+  --btn-bg: #1a1a1a;
+  --btn-bg-hover: #3a3a3a;
+  --btn-fg: #ffffff;
+}
+
+body[data-theme="gray"] {
+  --accent: #b0b0b0;
+  --accent-strong: #d8d8d8;
+  --accent-bg: rgba(255, 255, 255, 0.08);
+  --accent-bg-hover: rgba(255, 255, 255, 0.16);
+  --accent-border: rgba(255, 255, 255, 0.3);
+  --text-primary: #ededed;
+  --text-muted: rgba(255, 255, 255, 0.55);
+  --panel-bg: rgba(20, 20, 20, 0.6);
+  --field-bg: rgba(255, 255, 255, 0.07);
+  --btn-bg: #ffffff;
+  --btn-bg-hover: #d0d0d0;
+  --btn-fg: #1a1a1a;
+}
+
+body[data-theme="green"] {
+  --accent: #4caf50;
+  --accent-strong: #2e7d32;
+  --accent-bg: rgba(76, 175, 80, 0.14);
+  --accent-bg-hover: rgba(76, 175, 80, 0.26);
+  --accent-border: rgba(76, 175, 80, 0.4);
+  --text-primary: #e6ffe9;
+  --text-muted: rgba(230, 255, 233, 0.6);
+  --panel-bg: rgba(8, 24, 14, 0.55);
+  --field-bg: rgba(255, 255, 255, 0.07);
+  --btn-bg: #ffffff;
+  --btn-bg-hover: #d6ffd9;
+  --btn-fg: #0a1a0c;
+}
+
+body[data-theme="blue"] {
+  --accent: #4fa8ff;
+  --accent-strong: #2d95ff;
+  --accent-bg: rgba(79, 168, 255, 0.14);
+  --accent-bg-hover: rgba(79, 168, 255, 0.26);
+  --accent-border: rgba(79, 168, 255, 0.4);
+  --text-primary: #e6f4ff;
+  --text-muted: rgba(230, 244, 255, 0.6);
+  --panel-bg: rgba(8, 14, 24, 0.55);
+  --field-bg: rgba(255, 255, 255, 0.07);
+  --btn-bg: #ffffff;
+  --btn-bg-hover: #d6ecff;
+  --btn-fg: #0a1420;
 }
 
 * {
@@ -34,9 +98,9 @@ html, body {
   padding: 10px;
   display: flex;
   flex-direction: row;
-  gap: 10px;
+  gap: 0;
   color: var(--text-primary);
-  box-shadow: 0 0 14px rgba(255, 20, 147, 0.3);
+  box-shadow: 0 0 14px var(--accent-bg-hover);
   -webkit-app-region: drag;
 }
 
@@ -46,6 +110,78 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  padding-right: 8px;
+}
+
+/* ---------- Column resizer ---------- */
+
+#col-resizer {
+  width: 18px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  position: relative;
+  -webkit-app-region: no-drag;
+}
+
+#col-resizer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 2px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--accent-border);
+  z-index: 0;
+}
+
+#col-resizer:hover::after,
+#col-resizer.dragging::after {
+  background: var(--accent);
+}
+
+#col-toggle-btn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  width: 16px;
+  height: 60px;
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  border: 1px solid var(--accent-border);
+  border-radius: 3px;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  letter-spacing: 1px;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-app-region: no-drag;
+}
+
+#col-toggle-btn:hover {
+  background: var(--btn-bg-hover);
+}
+
+body.regex-col-collapsed #regex-col {
+  width: 0 !important;
+  min-width: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+body.regex-col-collapsed #col-resizer {
+  cursor: default;
+}
+
+body.regex-col-collapsed #col-resizer::after {
+  display: none;
 }
 
 /* ---------- Header ---------- */
@@ -74,32 +210,38 @@ html, body {
 
 #settings-btn,
 #close-btn {
-  background: none;
+  background: var(--btn-bg);
   border: none;
-  color: var(--text-muted);
+  border-radius: 5px;
+  color: var(--btn-fg);
   cursor: pointer;
-  opacity: 0.8;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   -webkit-app-region: no-drag;
 }
 
 #settings-btn {
-  font-size: 13px;
+  font-size: 16px;
+  line-height: 1;
 }
 
 #close-btn {
-  font-size: 20px;
+  font-size: 18px;
   line-height: 1;
 }
 
 #settings-btn:hover,
 #close-btn:hover {
-  opacity: 1;
-  color: var(--accent);
+  background: var(--btn-bg-hover);
+  color: var(--accent-strong);
 }
 
 body.edit-mode #settings-btn {
-  color: var(--accent);
-  opacity: 1;
+  background: var(--accent);
+  color: #fff;
 }
 
 /* ---------- Settings panel ---------- */
@@ -117,7 +259,8 @@ body.edit-mode #settings-panel {
   display: flex;
 }
 
-#build-row {
+#build-row,
+#theme-row {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -141,20 +284,40 @@ body.edit-mode #settings-panel {
 }
 
 #build-select option {
-  background: #1a0512;
+  background: var(--panel-bg);
+  color: var(--text-primary);
+}
+
+#theme-select {
+  flex: 1;
+  background: var(--field-bg);
+  border: 1px solid var(--accent-border);
+  border-radius: 4px;
+  padding: 4px 6px;
+  color: var(--text-primary);
+  font-size: 11px;
+  -webkit-app-region: no-drag;
+}
+
+#theme-select option {
+  background: var(--panel-bg);
   color: var(--text-primary);
 }
 
 #add-build-btn {
-  background: var(--accent-bg-hover);
+  background: var(--btn-bg);
   border: none;
   border-radius: 4px;
   width: 20px;
-  color: var(--text-primary);
+  color: var(--btn-fg);
   font-weight: bold;
   cursor: pointer;
   flex-shrink: 0;
   -webkit-app-region: no-drag;
+}
+
+#add-build-btn:hover {
+  background: var(--btn-bg-hover);
 }
 
 /* ---------- Sections / checklist ---------- */
@@ -227,12 +390,15 @@ body.edit-mode .drag-handle {
 
 .section-del-btn {
   display: none;
-  background: none;
+  background: var(--btn-bg);
   border: none;
-  color: var(--text-muted);
-  font-size: 12px;
+  border-radius: 4px;
+  width: 18px;
+  height: 18px;
+  line-height: 1;
+  color: var(--btn-fg);
+  font-size: 11px;
   cursor: pointer;
-  opacity: 0.7;
   -webkit-app-region: no-drag;
 }
 
@@ -241,8 +407,8 @@ body.edit-mode .section-del-btn {
 }
 
 .section-del-btn:hover {
-  opacity: 1;
-  color: var(--accent);
+  background: var(--btn-bg-hover);
+  color: var(--accent-strong);
 }
 
 .section-items {
@@ -259,7 +425,7 @@ body.edit-mode .section-del-btn {
 }
 
 .section-items li:hover {
-  background: rgba(255, 105, 180, 0.08);
+  background: var(--accent-bg);
 }
 
 .section-items li input[type="checkbox"] {
@@ -290,18 +456,21 @@ body.edit-mode .section-del-btn {
 }
 
 @keyframes flash-highlight {
-  0% { background: rgba(255, 79, 168, 0.85); }
+  0% { background: var(--accent-bg-hover); }
   100% { background: transparent; }
 }
 
 .section-items li .del-btn {
   display: none;
-  background: none;
+  background: var(--btn-bg);
   border: none;
-  color: var(--text-muted);
-  font-size: 12px;
+  border-radius: 4px;
+  width: 18px;
+  height: 18px;
+  line-height: 1;
+  color: var(--btn-fg);
+  font-size: 11px;
   cursor: pointer;
-  opacity: 0.7;
   -webkit-app-region: no-drag;
 }
 
@@ -310,8 +479,8 @@ body.edit-mode .section-items li .del-btn {
 }
 
 .section-items li .del-btn:hover {
-  opacity: 1;
-  color: var(--accent);
+  background: var(--btn-bg-hover);
+  color: var(--accent-strong);
 }
 
 .section-add-row {
@@ -336,14 +505,18 @@ body.edit-mode .section-add-row {
 }
 
 .section-add-btn {
-  background: var(--accent-bg-hover);
+  background: var(--btn-bg);
   border: none;
   border-radius: 4px;
   width: 22px;
-  color: var(--text-primary);
+  color: var(--btn-fg);
   font-weight: bold;
   cursor: pointer;
   -webkit-app-region: no-drag;
+}
+
+.section-add-btn:hover {
+  background: var(--btn-bg-hover);
 }
 
 #add-section-row {
@@ -369,14 +542,18 @@ body.edit-mode #add-section-row {
 }
 
 #add-section-btn {
-  background: var(--accent);
+  background: var(--btn-bg);
   border: none;
   border-radius: 4px;
   width: 26px;
-  color: #1a0512;
+  color: var(--btn-fg);
   font-weight: bold;
   cursor: pointer;
   -webkit-app-region: no-drag;
+}
+
+#add-section-btn:hover {
+  background: var(--btn-bg-hover);
 }
 
 #hint {
@@ -394,8 +571,6 @@ body.edit-mode #add-section-row {
   flex-direction: column;
   align-items: stretch;
   gap: 6px;
-  padding-left: 10px;
-  border-left: 1px solid var(--accent-border);
   overflow-y: auto;
 }
 
@@ -410,27 +585,30 @@ body.edit-mode #add-section-row {
 }
 
 #regex-grid {
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-wrap: wrap;
   gap: 6px;
 }
 
 .regex-square-wrap {
   position: relative;
+  width: 46px;
+  flex-shrink: 0;
 }
 
 .regex-square {
-  width: 100%;
-  aspect-ratio: 1 / 1;
+  width: 46px;
+  height: 46px;
   background: var(--accent-bg);
   border: 1px solid var(--accent-border);
   border-radius: 5px;
   color: var(--text-primary);
   font-size: 9px;
   font-weight: 700;
-  line-height: 1.15;
+  line-height: 1.1;
   padding: 3px;
   cursor: pointer;
+  overflow: hidden;
   word-break: break-word;
   white-space: normal;
   -webkit-app-region: no-drag;
@@ -450,7 +628,7 @@ body.edit-mode #add-section-row {
   line-height: 12px;
   text-align: center;
   font-size: 8px;
-  background: #1a0512;
+  background: var(--panel-bg);
   border: 1px solid var(--accent-border);
   border-radius: 50%;
   color: var(--text-muted);
@@ -466,15 +644,19 @@ body.edit-mode .regex-square-wrap:hover .regex-del-btn {
 #add-regex-btn {
   display: none;
   width: 100%;
-  background: var(--accent-bg-hover);
+  background: var(--btn-bg);
   border: 1px dashed var(--accent-border);
   border-radius: 5px;
-  color: var(--accent);
+  color: var(--btn-fg);
   font-weight: bold;
   font-size: 13px;
   cursor: pointer;
   padding: 4px 0;
   -webkit-app-region: no-drag;
+}
+
+#add-regex-btn:hover {
+  background: var(--btn-bg-hover);
 }
 
 body.edit-mode #add-regex-btn {
@@ -505,11 +687,15 @@ body:not(.edit-mode) #regex-add-form {
 
 #regex-confirm-btn {
   width: 100%;
-  background: var(--accent);
+  background: var(--btn-bg);
   border: none;
   border-radius: 4px;
-  color: #1a0512;
+  color: var(--btn-fg);
   font-weight: bold;
   cursor: pointer;
   -webkit-app-region: no-drag;
+}
+
+#regex-confirm-btn:hover {
+  background: var(--btn-bg-hover);
 }

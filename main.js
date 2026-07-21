@@ -335,6 +335,12 @@ app.whenReady().then(() => {
   ipcMain.on('save-items', (_event, items) => saveItems(items))
   ipcMain.on('search-item', (_event, itemId) => searchAndCheckItem(itemId))
   ipcMain.on('hide-window', () => mainWindow && mainWindow.hide())
+  ipcMain.on('resize-window-by', (_event, deltaWidth) => {
+    if (!mainWindow) return
+    const { x, y, width, height } = mainWindow.getBounds()
+    mainWindow.setBounds({ x, y, width: Math.round(width + deltaWidth), height })
+    saveWindowState()
+  })
   ipcMain.handle('load-regexes', () => loadRegexes())
   ipcMain.on('save-regexes', (_event, list) => saveRegexes(list))
   ipcMain.on('search-regex', (_event, pattern) => searchRegexInGame(pattern))

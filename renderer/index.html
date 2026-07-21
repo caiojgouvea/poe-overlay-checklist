@@ -5,7 +5,7 @@
   <title>PoE League Checklist</title>
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body data-theme="pink">
   <div id="panel">
     <div id="main-col">
       <div id="header">
@@ -20,7 +20,17 @@
         <div id="build-row">
           <label for="build-select">Build</label>
           <select id="build-select"></select>
-          <button id="add-build-btn" title="Nova build">+</button>
+          <button id="add-build-btn" title="New build">+</button>
+        </div>
+        <div id="theme-row">
+          <label for="theme-select">Theme</label>
+          <select id="theme-select">
+            <option value="pink">Pink</option>
+            <option value="white">White</option>
+            <option value="gray">Gray</option>
+            <option value="green">Green</option>
+            <option value="blue">Blue</option>
+          </select>
         </div>
       </div>
 
@@ -32,6 +42,10 @@
       </div>
 
       <div id="hint">Ctrl+Shift+L para mostrar/esconder</div>
+    </div>
+
+    <div id="col-resizer" title="Drag to resize">
+      <button id="col-toggle-btn" title="Show/hide regex column">◀</button>
     </div>
 
     <div id="regex-col">

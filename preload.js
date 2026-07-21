@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld('api', {
   saveItems: (items) => ipcRenderer.send('save-items', items),
   searchItem: (itemId) => ipcRenderer.send('search-item', itemId),
   hideWindow: () => ipcRenderer.send('hide-window'),
+  resizeWindowBy: (deltaWidth) => ipcRenderer.send('resize-window-by', deltaWidth),
   loadRegexes: () => ipcRenderer.invoke('load-regexes'),
   saveRegexes: (list) => ipcRenderer.send('save-regexes', list),
   searchRegex: (pattern) => ipcRenderer.send('search-regex', pattern),
