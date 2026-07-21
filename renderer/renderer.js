@@ -5,6 +5,7 @@ const sectionsEl = document.getElementById('sections')
 const addSectionInput = document.getElementById('new-section-input')
 const addSectionBtn = document.getElementById('add-section-btn')
 const settingsBtn = document.getElementById('settings-btn')
+const settingsCollapseBtn = document.getElementById('settings-collapse-btn')
 const closeBtn = document.getElementById('close-btn')
 const buildSelect = document.getElementById('build-select')
 const addBuildBtn = document.getElementById('add-build-btn')
@@ -373,6 +374,20 @@ addSectionInput.addEventListener('keydown', (e) => {
 
 settingsBtn.addEventListener('click', () => {
   document.body.classList.toggle('edit-mode')
+})
+
+const SETTINGS_COLLAPSED_KEY = 'settingsCollapsed'
+
+function applySettingsCollapsed(collapsed) {
+  document.body.classList.toggle('settings-collapsed', collapsed)
+  settingsCollapseBtn.innerText = collapsed ? '▼' : '▲'
+  localStorage.setItem(SETTINGS_COLLAPSED_KEY, collapsed ? '1' : '0')
+}
+
+applySettingsCollapsed(localStorage.getItem(SETTINGS_COLLAPSED_KEY) === '1')
+
+settingsCollapseBtn.addEventListener('click', () => {
+  applySettingsCollapsed(!document.body.classList.contains('settings-collapsed'))
 })
 
 closeBtn.addEventListener('click', () => {

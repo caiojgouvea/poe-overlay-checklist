@@ -164,7 +164,8 @@ html, body {
 }
 
 #settings-btn,
-#close-btn {
+#close-btn,
+#settings-collapse-btn {
   background: var(--btn-bg);
   border: none;
   border-radius: 5px;
@@ -188,8 +189,19 @@ html, body {
   line-height: 1;
 }
 
+#settings-collapse-btn {
+  display: none;
+  font-size: 11px;
+  line-height: 1;
+}
+
+body.edit-mode #settings-collapse-btn {
+  display: flex;
+}
+
 #settings-btn:hover,
-#close-btn:hover {
+#close-btn:hover,
+#settings-collapse-btn:hover {
   background: var(--btn-bg-hover);
   color: var(--accent-strong);
 }
@@ -212,6 +224,10 @@ body.edit-mode #settings-btn {
 
 body.edit-mode #settings-panel {
   display: flex;
+}
+
+body.settings-collapsed #settings-panel {
+  display: none;
 }
 
 #build-row,
