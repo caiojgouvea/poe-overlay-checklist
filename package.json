@@ -4,9 +4,29 @@
   "description": "Overlay de checklist para começo de liga no Path of Exile",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "dist": "electron-builder",
+    "package": "electron-packager . \"PoE League Checklist\" --platform=win32 --arch=x64 --out=dist-packaged --overwrite --ignore=\"^/dist($|/)\" --ignore=\"^/dist-packaged($|/)\""
   },
   "devDependencies": {
-    "electron": "^31.0.0"
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3",
+    "electron-packager": "^17.1.2"
+  },
+  "build": {
+    "appId": "com.caiojgouvea.poe-league-checklist",
+    "productName": "PoE League Checklist",
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*",
+      "data/**/*"
+    ],
+    "win": {
+      "target": "portable"
+    },
+    "directories": {
+      "output": "dist"
+    }
   }
 }
