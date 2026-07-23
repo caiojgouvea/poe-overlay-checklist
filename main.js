@@ -602,17 +602,20 @@ function searchRegexInGame(pattern) {
   pasteIntoGame()
 }
 
+const DEFAULT_WIDTH = 260
+const DEFAULT_HEIGHT = 300
+
 function createWindow() {
   const { width: screenW } = screen.getPrimaryDisplay().workAreaSize
   const savedState = loadWindowState()
 
   mainWindow = new BrowserWindow({
-    width: savedState && savedState.width ? savedState.width : 320,
-    height: savedState && savedState.height ? savedState.height : 440,
-    x: savedState && savedState.x != null ? savedState.x : screenW - 340,
-    y: savedState && savedState.y != null ? savedState.y : 40,
-    minWidth: 220,
-    minHeight: 180,
+    width: savedState && savedState.width ? savedState.width : DEFAULT_WIDTH,
+    height: savedState && savedState.height ? savedState.height : DEFAULT_HEIGHT,
+    x: savedState && savedState.x != null ? savedState.x : Math.round(screenW / 2 - DEFAULT_WIDTH / 2),
+    y: savedState && savedState.y != null ? savedState.y : 10,
+    minWidth: 140,
+    minHeight: 90,
     frame: false,
     transparent: true,
     alwaysOnTop: true,

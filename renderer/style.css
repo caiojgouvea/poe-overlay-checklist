@@ -1,32 +1,52 @@
-:root,
-body[data-theme="pink"] {
-  --accent: #ff4fa8;
-  --accent-strong: #ff2d95;
-  --accent-bg: rgba(255, 79, 168, 0.14);
-  --accent-bg-hover: rgba(255, 79, 168, 0.26);
-  --accent-border: rgba(255, 79, 168, 0.4);
-  --text-primary: #ffe6f4;
-  --text-muted: rgba(255, 230, 244, 0.6);
-  --panel-bg: rgba(24, 8, 18, 0.55);
-  --field-bg: rgba(255, 255, 255, 0.07);
-  --btn-bg: #ffffff;
-  --btn-bg-hover: #ffd6ec;
-  --btn-fg: #1a0512;
+:root {
+  /* Font sizes and control sizes scale with the window's own width (1vw =
+     1% of the BrowserWindow content area, since there's no browser chrome)
+     so dragging the window smaller/larger scales the whole UI instead of
+     just clipping or leaving it cramped. Values are clamped so text never
+     goes unreadable or absurdly large. */
+  --fs-title: clamp(10px, 4.4vw, 16px);
+  --fs-icon: clamp(10px, 4.6vw, 16px);
+  --fs-body: clamp(9px, 4.2vw, 14px);
+  --fs-support: clamp(7.5px, 3.4vw, 11px);
+  --fs-label: clamp(8px, 3.6vw, 12px);
+  --fs-hint: clamp(7px, 3vw, 10px);
+  --btn-size: clamp(16px, 8vw, 26px);
+  --btn-size-sm: clamp(14px, 7vw, 22px);
+  --checkbox-size: clamp(10px, 4.4vw, 14px);
+  --panel-pad: clamp(6px, 3vw, 12px);
 }
 
+/* Gold: warm amber-on-near-black, close to PoE's own quest tracker/UI text */
+:root,
+body[data-theme="pink"] {
+  --accent: #d9ac4f;
+  --accent-strong: #f0c667;
+  --accent-bg: rgba(217, 172, 79, 0.14);
+  --accent-bg-hover: rgba(217, 172, 79, 0.26);
+  --accent-border: rgba(217, 172, 79, 0.4);
+  --text-primary: #f5ecd4;
+  --text-muted: rgba(245, 236, 212, 0.6);
+  --panel-bg: rgba(10, 8, 4, 0.62);
+  --field-bg: rgba(255, 255, 255, 0.07);
+  --btn-bg: #f5ecd4;
+  --btn-bg-hover: #ffe3a0;
+  --btn-fg: #1a1408;
+}
+
+/* Crimson: deep blood red, hardcore/danger vibe */
 body[data-theme="white"] {
-  --accent: #d6336c;
-  --accent-strong: #b8255a;
-  --accent-bg: rgba(214, 51, 108, 0.1);
-  --accent-bg-hover: rgba(214, 51, 108, 0.2);
-  --accent-border: rgba(214, 51, 108, 0.35);
-  --text-primary: #1a1a1a;
-  --text-muted: rgba(0, 0, 0, 0.55);
-  --panel-bg: rgba(255, 255, 255, 0.85);
-  --field-bg: rgba(0, 0, 0, 0.05);
-  --btn-bg: #1a1a1a;
-  --btn-bg-hover: #3a3a3a;
-  --btn-fg: #ffffff;
+  --accent: #e04f4f;
+  --accent-strong: #ff6b6b;
+  --accent-bg: rgba(224, 79, 79, 0.14);
+  --accent-bg-hover: rgba(224, 79, 79, 0.26);
+  --accent-border: rgba(224, 79, 79, 0.4);
+  --text-primary: #ffe3e3;
+  --text-muted: rgba(255, 227, 227, 0.6);
+  --panel-bg: rgba(20, 4, 4, 0.62);
+  --field-bg: rgba(255, 255, 255, 0.07);
+  --btn-bg: #ffe3e3;
+  --btn-bg-hover: #ffc2c2;
+  --btn-fg: #1a0505;
 }
 
 body[data-theme="gray"] {
@@ -44,19 +64,20 @@ body[data-theme="gray"] {
   --btn-fg: #1a1a1a;
 }
 
+/* Void: chaos-orb purple, evokes corruption */
 body[data-theme="green"] {
-  --accent: #4caf50;
-  --accent-strong: #2e7d32;
-  --accent-bg: rgba(76, 175, 80, 0.14);
-  --accent-bg-hover: rgba(76, 175, 80, 0.26);
-  --accent-border: rgba(76, 175, 80, 0.4);
-  --text-primary: #e6ffe9;
-  --text-muted: rgba(230, 255, 233, 0.6);
-  --panel-bg: rgba(8, 24, 14, 0.55);
+  --accent: #a876ef;
+  --accent-strong: #c49aff;
+  --accent-bg: rgba(168, 118, 239, 0.14);
+  --accent-bg-hover: rgba(168, 118, 239, 0.26);
+  --accent-border: rgba(168, 118, 239, 0.4);
+  --text-primary: #ece0ff;
+  --text-muted: rgba(236, 224, 255, 0.6);
+  --panel-bg: rgba(12, 6, 20, 0.62);
   --field-bg: rgba(255, 255, 255, 0.07);
-  --btn-bg: #ffffff;
-  --btn-bg-hover: #d6ffd9;
-  --btn-fg: #0a1a0c;
+  --btn-bg: #ece0ff;
+  --btn-bg-hover: #d6bfff;
+  --btn-fg: #150a20;
 }
 
 body[data-theme="blue"] {
@@ -95,7 +116,7 @@ html, body {
   background: var(--panel-bg);
   border: 1px solid var(--accent-border);
   border-radius: 8px;
-  padding: 10px;
+  padding: var(--panel-pad);
   display: flex;
   flex-direction: row;
   gap: 0;
@@ -107,6 +128,7 @@ html, body {
 #main-col {
   flex: 1;
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -150,7 +172,7 @@ html, body {
 }
 
 #title {
-  font-size: 13px;
+  font-size: var(--fs-title);
   font-weight: 600;
   letter-spacing: 0.3px;
   color: var(--accent);
@@ -171,8 +193,8 @@ html, body {
   border-radius: 5px;
   color: var(--btn-fg);
   cursor: pointer;
-  width: 28px;
-  height: 28px;
+  width: var(--btn-size);
+  height: var(--btn-size);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -180,18 +202,18 @@ html, body {
 }
 
 #settings-btn {
-  font-size: 16px;
+  font-size: var(--fs-icon);
   line-height: 1;
 }
 
 #close-btn {
-  font-size: 18px;
+  font-size: var(--fs-icon);
   line-height: 1;
 }
 
 #settings-collapse-btn {
   display: none;
-  font-size: 11px;
+  font-size: var(--fs-label);
   line-height: 1;
 }
 
@@ -219,7 +241,7 @@ body.edit-mode #settings-btn {
   gap: 6px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--accent-border);
-  font-size: 11px;
+  font-size: var(--fs-label);
 }
 
 body.edit-mode #settings-panel {
@@ -252,7 +274,7 @@ body.settings-collapsed #settings-panel {
   border-radius: 4px;
   padding: 4px 6px;
   color: var(--text-primary);
-  font-size: 11px;
+  font-size: var(--fs-label);
   -webkit-app-region: no-drag;
 }
 
@@ -268,7 +290,7 @@ body.settings-collapsed #settings-panel {
   border-radius: 4px;
   padding: 4px 6px;
   color: var(--text-primary);
-  font-size: 11px;
+  font-size: var(--fs-label);
   -webkit-app-region: no-drag;
 }
 
@@ -291,7 +313,7 @@ body.settings-collapsed #settings-panel {
   border-radius: 4px;
   padding: 4px 6px;
   color: var(--text-primary);
-  font-size: 10px;
+  font-size: var(--fs-hint);
   -webkit-app-region: no-drag;
 }
 
@@ -302,7 +324,7 @@ body.settings-collapsed #settings-panel {
   padding: 0 8px;
   color: var(--btn-fg);
   font-weight: bold;
-  font-size: 10px;
+  font-size: var(--fs-hint);
   cursor: pointer;
   flex-shrink: 0;
   -webkit-app-region: no-drag;
@@ -313,7 +335,7 @@ body.settings-collapsed #settings-panel {
 }
 
 #import-status {
-  font-size: 9px;
+  font-size: var(--fs-hint);
   color: var(--text-muted);
   min-height: 11px;
 }
@@ -330,7 +352,7 @@ body.settings-collapsed #settings-panel {
   border-radius: 4px;
   padding: 4px 6px;
   color: var(--text-primary);
-  font-size: 10px;
+  font-size: var(--fs-hint);
   text-align: center;
   -webkit-app-region: no-drag;
 }
@@ -342,7 +364,7 @@ body.settings-collapsed #settings-panel {
   padding: 0 8px;
   color: var(--btn-fg);
   font-weight: bold;
-  font-size: 10px;
+  font-size: var(--fs-hint);
   cursor: pointer;
   flex-shrink: 0;
   -webkit-app-region: no-drag;
@@ -358,7 +380,7 @@ body.settings-collapsed #settings-panel {
 }
 
 #hotkey-status {
-  font-size: 9px;
+  font-size: var(--fs-hint);
   color: var(--text-muted);
   min-height: 11px;
 }
@@ -372,9 +394,9 @@ body.settings-collapsed #settings-panel {
   background: var(--btn-bg);
   border: none;
   border-radius: 4px;
-  width: 26px;
-  height: 26px;
-  font-size: 15px;
+  width: var(--btn-size-sm);
+  height: var(--btn-size-sm);
+  font-size: var(--fs-icon);
   color: var(--btn-fg);
   font-weight: bold;
   cursor: pointer;
@@ -404,7 +426,7 @@ body.settings-collapsed #settings-panel {
   border-radius: 4px;
   padding: 4px 6px;
   color: var(--text-primary);
-  font-size: 11px;
+  font-size: var(--fs-label);
   -webkit-app-region: no-drag;
 }
 
@@ -460,7 +482,7 @@ body.settings-collapsed #settings-panel {
 }
 
 .chevron {
-  font-size: 8px;
+  font-size: var(--fs-hint);
   width: 10px;
   flex-shrink: 0;
   cursor: pointer;
@@ -470,7 +492,7 @@ body.settings-collapsed #settings-panel {
 
 .section-title {
   flex: 1;
-  font-size: 11px;
+  font-size: var(--fs-label);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -481,7 +503,7 @@ body.settings-collapsed #settings-panel {
 
 .drag-handle {
   display: none;
-  font-size: 11px;
+  font-size: var(--fs-label);
   color: var(--text-muted);
   cursor: grab;
   flex-shrink: 0;
@@ -501,7 +523,7 @@ body.edit-mode .drag-handle {
   height: 18px;
   line-height: 1;
   color: var(--btn-fg);
-  font-size: 11px;
+  font-size: var(--fs-label);
   cursor: pointer;
   -webkit-app-region: no-drag;
 }
@@ -533,8 +555,8 @@ body.edit-mode .section-del-btn {
 }
 
 .section-items li input[type="checkbox"] {
-  width: 13px;
-  height: 13px;
+  width: var(--checkbox-size);
+  height: var(--checkbox-size);
   accent-color: var(--accent);
   flex-shrink: 0;
   -webkit-app-region: no-drag;
@@ -543,7 +565,7 @@ body.edit-mode .section-del-btn {
 .section-items li .item-text {
   flex: 1;
   outline: none;
-  font-size: 12px;
+  font-size: var(--fs-body);
   font-weight: 600;
   color: var(--accent-strong);
   cursor: pointer;
@@ -573,7 +595,7 @@ body.edit-mode .section-del-btn {
 }
 
 .section-items li.support-item .item-text {
-  font-size: 10px;
+  font-size: var(--fs-support);
   font-weight: 500;
   color: var(--text-muted);
 }
@@ -602,7 +624,7 @@ body.edit-mode .section-del-btn {
   height: 18px;
   line-height: 1;
   color: var(--btn-fg);
-  font-size: 11px;
+  font-size: var(--fs-label);
   cursor: pointer;
   -webkit-app-region: no-drag;
 }
@@ -631,7 +653,7 @@ body.edit-mode .section-items li .nest-btn {
   border-radius: 4px;
   padding: 4px 6px;
   color: var(--text-primary);
-  font-size: 11px;
+  font-size: var(--fs-label);
   -webkit-app-region: no-drag;
 }
 
@@ -642,7 +664,7 @@ body.edit-mode .section-items li .nest-btn {
   padding: 4px 8px;
   color: var(--btn-fg);
   font-weight: bold;
-  font-size: 10px;
+  font-size: var(--fs-hint);
   cursor: pointer;
   flex-shrink: 0;
   -webkit-app-region: no-drag;
@@ -669,7 +691,7 @@ body.edit-mode .section-add-row {
   border-radius: 4px;
   padding: 4px 6px;
   color: var(--text-primary);
-  font-size: 11px;
+  font-size: var(--fs-label);
   -webkit-app-region: no-drag;
 }
 
@@ -689,7 +711,7 @@ body.edit-mode .section-add-row {
 }
 
 #hint {
-  font-size: 9px;
+  font-size: var(--fs-hint);
   text-align: center;
   color: var(--text-muted);
 }
