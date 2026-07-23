@@ -29,6 +29,33 @@ function persist() {
   window.api.saveItems(sections)
 }
 
+function normalize(text) {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+}
+
+// The same gem/step often repeats across sections (e.g. "Frostblink" in
+// every leveling stage). Checking it in one section should check it
+// everywhere it appears in the build, so progress reflects reality.
+function setDoneEverywhere(text, done) {
+  const normText = normalize(text)
+  if (!normText) return
+  for (const section of sections) {
+    for (const item of section.items) {
+      if (normalize(item.text) === normText) item.done = done
+      if (item.supports) {
+        for (const support of item.supports) {
+          if (normalize(support.text) === normText) support.done = done
+        }
+      }
+    }
+  }
+}
+
 function render() {
   sectionsEl.innerHTML = ''
   for (const section of sections) {
@@ -208,9 +235,9 @@ function buildItemEl(section, item) {
   checkbox.type = 'checkbox'
   checkbox.checked = item.done
   checkbox.addEventListener('change', () => {
-    item.done = checkbox.checked
-    li.classList.toggle('done', item.done)
+    setDoneEverywhere(item.text, checkbox.checked)
     persist()
+    render()
   })
 
   const text = document.createElement('span')
@@ -292,9 +319,9 @@ function buildSupportEl(section, mainItem, support) {
   checkbox.type = 'checkbox'
   checkbox.checked = support.done
   checkbox.addEventListener('change', () => {
-    support.done = checkbox.checked
-    li.classList.toggle('done', support.done)
+    setDoneEverywhere(support.text, checkbox.checked)
     persist()
+    render()
   })
 
   const text = document.createElement('span')

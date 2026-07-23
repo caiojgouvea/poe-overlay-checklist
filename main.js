@@ -266,6 +266,17 @@ function forEachItem(sections, callback) {
   }
 }
 
+// The same gem/step often repeats across sections (e.g. "Frostblink" in
+// every leveling stage). Checking it in one section should check it
+// everywhere it appears in the build, so progress reflects reality.
+function syncDoneEverywhere(sections, text, done) {
+  const normText = normalize(text)
+  if (!normText) return
+  forEachItem(sections, (item) => {
+    if (normalize(item.text) === normText) item.done = done
+  })
+}
+
 function tryAutoCheckFromClipboard() {
   const text = clipboard.readText()
   if (!text || text === lastClipboardText) return
@@ -291,7 +302,7 @@ function tryAutoCheckFromClipboard() {
 
   if (!matchedItem) return
 
-  matchedItem.done = true
+  syncDoneEverywhere(sections, matchedItem.text, true)
   saveItems(sections)
   if (mainWindow) {
     mainWindow.webContents.send('items-updated', { sections, matchedItemId: matchedItem.id })
@@ -358,7 +369,7 @@ function searchAndCheckItem(itemId) {
   lastClipboardText = item.text
   pasteIntoGame()
 
-  item.done = true
+  syncDoneEverywhere(sections, item.text, true)
   saveItems(sections)
   if (mainWindow) {
     mainWindow.webContents.send('items-updated', { sections, matchedItemId: item.id })
