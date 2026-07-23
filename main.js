@@ -5,6 +5,11 @@ const https = require('https')
 const zlib = require('zlib')
 const { execFile } = require('child_process')
 
+// Electron's default userData path is derived from package.json's "name".
+// Pin it to a fixed folder so renaming the app (e.g. for branding) never
+// silently moves builds.json to a new, empty location again.
+app.setPath('userData', path.join(app.getPath('appData'), 'poe-progression-companion'))
+
 const DATA_FILE = path.join(app.getPath('userData'), 'checklist-data.json')
 const BUILDS_FILE = path.join(app.getPath('userData'), 'builds.json')
 const WINDOW_FILE = path.join(app.getPath('userData'), 'window-state.json')
