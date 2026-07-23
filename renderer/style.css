@@ -367,7 +367,8 @@ body.settings-collapsed #settings-panel {
   color: var(--accent-strong);
 }
 
-#add-build-btn {
+#add-build-btn,
+#clear-build-btn {
   background: var(--btn-bg);
   border: none;
   border-radius: 4px;
@@ -381,7 +382,8 @@ body.settings-collapsed #settings-panel {
   -webkit-app-region: no-drag;
 }
 
-#add-build-btn:hover {
+#add-build-btn:hover,
+#clear-build-btn:hover {
   background: var(--btn-bg-hover);
 }
 

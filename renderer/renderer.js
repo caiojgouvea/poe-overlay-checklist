@@ -9,6 +9,7 @@ const settingsCollapseBtn = document.getElementById('settings-collapse-btn')
 const closeBtn = document.getElementById('close-btn')
 const buildSelect = document.getElementById('build-select')
 const addBuildBtn = document.getElementById('add-build-btn')
+const clearBuildBtn = document.getElementById('clear-build-btn')
 const buildAddForm = document.getElementById('build-add-form')
 const buildNameInput = document.getElementById('build-name-input')
 const buildConfirmBtn = document.getElementById('build-confirm-btn')
@@ -463,6 +464,20 @@ addBuildBtn.addEventListener('click', () => {
 buildConfirmBtn.addEventListener('click', addBuild)
 buildNameInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') addBuild()
+})
+
+clearBuildBtn.addEventListener('click', () => {
+  if (!confirm('Uncheck all items in this build?')) return
+  for (const section of sections) {
+    for (const item of section.items) {
+      item.done = false
+      if (item.supports) {
+        for (const support of item.supports) support.done = false
+      }
+    }
+  }
+  persist()
+  render()
 })
 
 importBuildBtn.addEventListener('click', async () => {
