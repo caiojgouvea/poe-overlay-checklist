@@ -57,6 +57,22 @@ function setDoneEverywhere(text, done) {
   }
 }
 
+function isSectionDone(section) {
+  return section.items.every((item) => item.done && (!item.supports || item.supports.every((s) => s.done)))
+}
+
+// During actual gameplay you want to glance at the checklist and see only
+// what's next, not scroll through every leveling stage. Whenever progress
+// changes, snap the view to the first section that still has something
+// pending and collapse the rest, so the overlay always opens on "now".
+function focusCurrentSection() {
+  const idx = sections.findIndex((s) => !isSectionDone(s))
+  if (idx === -1) return
+  sections.forEach((s, i) => {
+    s.collapsed = i !== idx
+  })
+}
+
 function render() {
   sectionsEl.innerHTML = ''
   for (const section of sections) {
@@ -237,6 +253,7 @@ function buildItemEl(section, item) {
   checkbox.checked = item.done
   checkbox.addEventListener('change', () => {
     setDoneEverywhere(item.text, checkbox.checked)
+    focusCurrentSection()
     persist()
     render()
   })
@@ -321,6 +338,7 @@ function buildSupportEl(section, mainItem, support) {
   checkbox.checked = support.done
   checkbox.addEventListener('change', () => {
     setDoneEverywhere(support.text, checkbox.checked)
+    focusCurrentSection()
     persist()
     render()
   })
@@ -424,6 +442,7 @@ closeBtn.addEventListener('click', () => {
 
 window.api.onItemsUpdated(({ sections: updated, matchedItemId }) => {
   sections = updated
+  focusCurrentSection()
   render()
   if (matchedItemId) {
     const li = sectionsEl.querySelector(`[data-item-id="${matchedItemId}"]`)
@@ -503,6 +522,7 @@ importUrlInput.addEventListener('keydown', (e) => {
 window.api.onBuildsUpdated(({ builds, activeBuildId, sections: updated }) => {
   renderBuildSelect({ builds, activeBuildId })
   sections = updated
+  focusCurrentSection()
   render()
 })
 
@@ -512,6 +532,7 @@ window.api.loadBuilds().then((state) => {
 
 window.api.loadItems().then((loaded) => {
   sections = loaded
+  focusCurrentSection()
   render()
 })
 
