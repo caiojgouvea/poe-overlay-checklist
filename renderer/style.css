@@ -163,23 +163,34 @@ html, body {
 
 /* ---------- Header ---------- */
 
+/* Grid instead of flex so the title can sit dead-center: the two 1fr
+   tracks stay equal width regardless of the (empty) left one having no
+   content, which pushes the auto-sized title column into true center. */
 #header {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
+  column-gap: 6px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--accent-border);
 }
 
 #title {
+  grid-column: 2;
+  justify-self: center;
   font-size: var(--fs-title);
   font-weight: 600;
   letter-spacing: 0.3px;
   color: var(--accent);
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 #header-actions {
+  grid-column: 3;
+  justify-self: end;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -559,14 +570,9 @@ body.edit-mode .section-del-btn {
 .item-row {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 6px;
   padding: 4px 4px;
   border-radius: 4px;
-}
-
-.item-row.support-item {
-  justify-content: flex-start;
 }
 
 .item-row:hover {
@@ -582,19 +588,15 @@ body.edit-mode .section-del-btn {
 }
 
 .item-row .item-text {
+  flex: 1;
   min-width: 0;
   outline: none;
   font-size: var(--fs-body);
   font-weight: 600;
   color: var(--accent-strong);
   cursor: pointer;
-  text-align: center;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
   -webkit-app-region: no-drag;
-}
-
-.item-row.support-item .item-text {
-  text-align: left;
 }
 
 .item-row.done .item-text {
