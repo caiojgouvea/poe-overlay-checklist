@@ -604,18 +604,24 @@ function searchRegexInGame(pattern) {
 
 const DEFAULT_WIDTH = 260
 const DEFAULT_HEIGHT = 300
+const BAR_HEIGHT = 40
+const MIN_HEIGHT = 90
+
+let isCollapsed = false
+let lastExpandedHeight = DEFAULT_HEIGHT
 
 function createWindow() {
   const { width: screenW } = screen.getPrimaryDisplay().workAreaSize
   const savedState = loadWindowState()
+  lastExpandedHeight = savedState && savedState.height ? savedState.height : DEFAULT_HEIGHT
 
   mainWindow = new BrowserWindow({
     width: savedState && savedState.width ? savedState.width : DEFAULT_WIDTH,
-    height: savedState && savedState.height ? savedState.height : DEFAULT_HEIGHT,
+    height: lastExpandedHeight,
     x: savedState && savedState.x != null ? savedState.x : Math.round(screenW / 2 - DEFAULT_WIDTH / 2),
     y: savedState && savedState.y != null ? savedState.y : 10,
     minWidth: 140,
-    minHeight: 90,
+    minHeight: MIN_HEIGHT,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
@@ -637,42 +643,67 @@ function createWindow() {
     saveWindowState()
     positionToggleWindow()
   })
-  mainWindow.on('resized', () => {
-    saveWindowState()
+  // 'resized' only fires on Windows after an interactive drag-resize
+  // completes, not for programmatic setBounds (used by collapse/expand) -
+  // 'resize' fires for both, so debounce it ourselves instead.
+  let resizeSaveTimer = null
+  mainWindow.on('resize', () => {
     positionToggleWindow()
+    if (isCollapsed) return
+    clearTimeout(resizeSaveTimer)
+    resizeSaveTimer = setTimeout(() => {
+      lastExpandedHeight = mainWindow.getBounds().height
+      saveWindowState()
+    }, 150)
   })
 }
 
-function hideAllWindows() {
-  mainWindow.hide()
-  if (toggleWindow) toggleWindow.hide()
-  if (regexWindow) regexWindow.hide()
-}
+// The overlay never fully disappears anymore (it would cover parts of the
+// PoE HUD every time it toggled back on in the wrong spot); instead the
+// hotkey/tray/close-button collapse it down to just its header bar, always
+// pinned in place, and expand it back to the full checklist.
+function setCollapsed(collapsed) {
+  if (!mainWindow || collapsed === isCollapsed) return
+  isCollapsed = collapsed
+  const bounds = mainWindow.getBounds()
 
-function showAllWindows() {
-  mainWindow.show()
-  if (toggleWindow) toggleWindow.show()
-  const savedRegexState = loadRegexWindowState()
-  if (regexWindow && savedRegexState && savedRegexState.visible) regexWindow.show()
-}
-
-function toggleVisibility() {
-  if (mainWindow.isVisible()) {
-    hideAllWindows()
+  if (collapsed) {
+    mainWindow.setResizable(false)
+    mainWindow.setMinimumSize(140, BAR_HEIGHT)
+    mainWindow.setBounds({ x: bounds.x, y: bounds.y, width: bounds.width, height: BAR_HEIGHT })
   } else {
-    showAllWindows()
+    mainWindow.setMinimumSize(140, MIN_HEIGHT)
+    mainWindow.setResizable(true)
+    mainWindow.setBounds({ x: bounds.x, y: bounds.y, width: bounds.width, height: lastExpandedHeight })
+  }
+
+  mainWindow.webContents.send('collapsed-changed', isCollapsed)
+
+  if (toggleWindow) {
+    if (collapsed) toggleWindow.hide()
+    else toggleWindow.show()
+  }
+  if (regexWindow) {
+    if (collapsed) {
+      regexWindow.hide()
+    } else {
+      const savedRegexState = loadRegexWindowState()
+      if (savedRegexState && savedRegexState.visible) regexWindow.show()
+    }
   }
 }
 
-// The overlay hides its windows (no taskbar entry) instead of closing them,
-// so a tray icon is the only way to bring it back or quit for real.
+function toggleVisibility() {
+  setCollapsed(!isCollapsed)
+}
+
 function createTray() {
   const icon = nativeImage.createFromPath(ICON_PATH)
   tray = new Tray(icon.resize({ width: 16, height: 16 }))
   tray.setToolTip(APP_NAME)
   tray.setContextMenu(
     Menu.buildFromTemplate([
-      { label: 'Show/Hide', click: () => toggleVisibility() },
+      { label: 'Expand/Collapse', click: () => toggleVisibility() },
       { type: 'separator' },
       { label: 'Quit', click: () => app.quit() }
     ])
@@ -789,7 +820,7 @@ app.whenReady().then(() => {
   ipcMain.handle('load-items', () => loadItems())
   ipcMain.on('save-items', (_event, items) => saveItems(items))
   ipcMain.on('search-item', (_event, itemId) => searchAndCheckItem(itemId))
-  ipcMain.on('hide-window', () => mainWindow && hideAllWindows())
+  ipcMain.on('hide-window', () => setCollapsed(true))
   ipcMain.handle('load-hotkey', () => currentHotkey)
   ipcMain.handle('set-hotkey', (_event, accelerator) => {
     const ok = registerHotkey(accelerator)

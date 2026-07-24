@@ -175,17 +175,23 @@ function buildSectionEl(section) {
   header.appendChild(delBtn)
   wrap.appendChild(header)
 
-  const list = document.createElement('ul')
+  const list = document.createElement('div')
   list.className = 'section-items'
   if (section.collapsed) list.style.display = 'none'
 
   for (const item of section.items) {
-    list.appendChild(buildItemEl(section, item))
-    if (item.supports) {
+    const group = document.createElement('div')
+    group.className = 'item-group'
+    group.appendChild(buildItemEl(section, item))
+    if (item.supports && item.supports.length) {
+      const supportsWrap = document.createElement('div')
+      supportsWrap.className = 'item-supports'
       for (const support of item.supports) {
-        list.appendChild(buildSupportEl(section, item, support))
+        supportsWrap.appendChild(buildSupportEl(section, item, support))
       }
+      group.appendChild(supportsWrap)
     }
+    list.appendChild(group)
   }
   wrap.appendChild(list)
 
@@ -223,7 +229,8 @@ function buildSectionEl(section) {
 }
 
 function buildItemEl(section, item) {
-  const li = document.createElement('li')
+  const li = document.createElement('div')
+  li.className = 'item-row'
   li.dataset.itemId = item.id
   if (item.done) li.classList.add('done')
 
@@ -328,8 +335,8 @@ function buildItemEl(section, item) {
 // Support gems linked to a main item (imported from a build). Rendered
 // indented, without a drag handle, and deleted from the parent's list.
 function buildSupportEl(section, mainItem, support) {
-  const li = document.createElement('li')
-  li.className = 'support-item'
+  const li = document.createElement('div')
+  li.className = 'item-row support-item'
   li.dataset.itemId = support.id
   if (support.done) li.classList.add('done')
 
@@ -438,6 +445,10 @@ settingsCollapseBtn.addEventListener('click', () => {
 
 closeBtn.addEventListener('click', () => {
   window.api.hideWindow()
+})
+
+window.api.onCollapsedChanged((collapsed) => {
+  document.body.classList.toggle('collapsed', collapsed)
 })
 
 window.api.onItemsUpdated(({ sections: updated, matchedItemId }) => {
@@ -553,8 +564,8 @@ function formatHotkeyForDisplay(accelerator) {
 
 function applyHotkey(accelerator) {
   hotkeyInput.value = formatHotkeyForDisplay(accelerator)
-  hintEl.textContent = `${formatHotkeyForDisplay(accelerator)} to show/hide`
-  closeBtn.title = `Hide (${formatHotkeyForDisplay(accelerator)})`
+  hintEl.textContent = `${formatHotkeyForDisplay(accelerator)} to expand/collapse`
+  closeBtn.title = `Collapse (${formatHotkeyForDisplay(accelerator)})`
 }
 
 function keyEventToAccelerator(e) {

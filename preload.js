@@ -19,5 +19,7 @@ contextBridge.exposeInMainWorld('api', {
   onItemsUpdated: (callback) =>
     ipcRenderer.on('items-updated', (_event, payload) => callback(payload)),
   onBuildsUpdated: (callback) =>
-    ipcRenderer.on('builds-updated', (_event, payload) => callback(payload))
+    ipcRenderer.on('builds-updated', (_event, payload) => callback(payload)),
+  onCollapsedChanged: (callback) =>
+    ipcRenderer.on('collapsed-changed', (_event, collapsed) => callback(collapsed))
 })
